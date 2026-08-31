@@ -1,6 +1,6 @@
 import express from "express"
 import cors from "cors"
-import Router from "../src/modules/route.ts";
+import Router from "../src/modules/routes.ts";
 import "dotenv/config"
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
