@@ -7,7 +7,6 @@ const ObrigatorioDoPersonagem = z.object({
     origem: z.string().min(1, "Campo obrigatorio"),
     classe: z.string().min(1, "Campo obrigatorio"),
     nivel: z.number(),
-    defesa: z.number(),
     for: z.number(),
     con: z.number(),
     des: z.number(),
@@ -22,10 +21,10 @@ const ObrigatorioDoPersonagem = z.object({
     jogadorId: z.number()
 });
 function MinHeroStatus(req, res, next) {
-    const { nomePersonagem, nomeJogador, raca, divindade, origem, classe, nivel, defesa, for_, con, des, int_, sab, car, pvMax, pvCurrent, pmMax, pmCurrent, deslocamento, jogadorId } = req.body;
+    const { nomePersonagem, nomeJogador, raca, divindade, origem, classe, nivel, for_, con, des, int_, sab, car, pvMax, pvCurrent, pmMax, pmCurrent, deslocamento, jogadorId } = req.body;
     ObrigatorioDoPersonagem.parse({
         nomePersonagem, nomeJogador, raca, divindade, origem, classe,
-        nivel, defesa, for: for_, con, des, int: int_, sab, car,
+        nivel, for: for_, con, des, int: int_, sab, car,
         pvMax, pvCurrent, pmMax, pmCurrent, deslocamento, jogadorId
     });
     next();

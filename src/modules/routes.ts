@@ -1,8 +1,8 @@
 import express from "express"
 import { type Request, type Response } from "express"
-import { prisma } from "../main"
-import { verificadorDeEmail } from "../middlewares/middlewaresUser";
-import { MinHeroStatus } from "../middlewares/MinimoPersonagem";
+import { prisma } from "../app.js"
+import { verificadorDeEmail } from "../middlewares/middlewaresUser.js";
+import { MinHeroStatus } from "../middlewares/MinimoPersonagem.js";
 import crypto from "crypto"
 
 const Router = express.Router();
@@ -791,7 +791,7 @@ Router.put("/habilidades/update/:id", async (req: Request, res: Response) => {
   if (descricao !== undefined) data.descricao = descricao;
   if (gastoPe !== undefined) data.gastoPe = gastoPe;
   if (fichaId !== undefined) data.fichaId = Number(fichaId);
-  if (fichaId !== undefined) data.classe = classe;
+  if (classe !== undefined) data.classe = classe;
   try {
     const habilidade = await prisma.habilidade.update({
       where: { id: habilidadeId },

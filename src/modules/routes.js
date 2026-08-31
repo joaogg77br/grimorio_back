@@ -1,7 +1,8 @@
 import express from "express";
-import { prisma } from "../main";
-import { verificadorDeEmail } from "../middlewares/middlewaresUser";
-import { MinHeroStatus } from "../middlewares/MinimoPersonagem";
+import { prisma } from "../app.js";
+import { verificadorDeEmail } from "../middlewares/middlewaresUser.js";
+import { MinHeroStatus } from "../middlewares/MinimoPersonagem.js";
+import crypto from "crypto";
 const Router = express.Router();
 //createUser
 Router.post("/create/user", verificadorDeEmail, async (req, res) => {
@@ -64,7 +65,6 @@ Router.post("/create/personagem", MinHeroStatus, async (req, res) => {
                 origem,
                 classe,
                 nivel: Number(nivel),
-                defesa: Number(defesa),
                 for: for_,
                 con: Number(con),
                 des: Number(des),
@@ -78,6 +78,12 @@ Router.post("/create/personagem", MinHeroStatus, async (req, res) => {
                 tibao,
                 deslocamento: Number(deslocamento),
                 jogadorId: Number(jogadorId),
+                defesa: {
+                    create: {
+                        atributos: defesa.atributos,
+                        outros: defesa.outros,
+                    }
+                },
                 pericias: {
                     createMany: {
                         data: pericias.map(item => ({
@@ -105,8 +111,6 @@ Router.post("/create/personagem", MinHeroStatus, async (req, res) => {
         res.status(400).json({ Error: err, ErrorMessage: `Erro ao tentar criar ficha tente novamente mais tarde` });
     }
 });
-Router.post("", async (req, res) => {
-});
 // Personagens  
 Router.put("/atualize/ficha/personagem/:fichaId", async (req, res) => {
     const { fichaId } = req.params;
@@ -125,16 +129,14 @@ Router.put("/atualize/ficha/personagem/:fichaId", async (req, res) => {
         data.classe = req.body.classe;
     if (req.body.nivel !== undefined)
         data.nivel = req.body.nivel;
-    if (req.body.defesa !== undefined)
-        data.defesa = req.body.defesa;
     if (req.body.for_ !== undefined)
-        data.for_ = req.body.for_;
+        data.for = req.body.for_;
     if (req.body.con !== undefined)
         data.con = req.body.con;
     if (req.body.des !== undefined)
         data.des = req.body.des;
     if (req.body.int_ !== undefined)
-        data.int_ = req.body.int_;
+        data.int = req.body.int_;
     if (req.body.sab !== undefined)
         data.sab = req.body.sab;
     if (req.body.car !== undefined)
@@ -149,6 +151,21 @@ Router.put("/atualize/ficha/personagem/:fichaId", async (req, res) => {
         data.pmCurrent = req.body.pmCurrent;
     if (req.body.deslocamento !== undefined)
         data.deslocamento = req.body.deslocamento;
+    if (req.body.tibao !== undefined)
+        data.tibao = req.body.tibao;
+    if (req.body.nomePersonagem !== undefined)
+        data.nomePersonagem = req.body.nomePersonagem;
+    // ... demais campos escalares iguais ...
+    if (req.body.defesa !== undefined) {
+        const outros = Number(req.body.defesa.outros ?? 0);
+        const atributos = req.body.defesa.atributos ?? req.body.defesa.atributo ?? "Des";
+        data.defesa = {
+            upsert: {
+                create: { outros, atributos },
+                update: { outros, atributos },
+            },
+        };
+    }
     try {
         const ficha = await prisma.ficha.update({
             where: { id: Number(fichaId) },
@@ -157,6 +174,7 @@ Router.put("/atualize/ficha/personagem/:fichaId", async (req, res) => {
         res.status(201).json({ message: "Ficha editada com sucesso", ficha });
     }
     catch (err) {
+        console.log(err);
         res.status(400).json({ Error: err, ErrorMessage: `Erro ao editar ficha tente novamente mais tarde` });
     }
 });
@@ -185,6 +203,9 @@ Router.get("/todasAsFichas/:userId", async (req, res) => {
             where: {
                 jogadorId: userIdNumber
             },
+            include: {
+                defesa: true
+            }
         });
         console.log("fichas", fichas);
         if (fichas.length <= 0)
@@ -195,31 +216,38 @@ Router.get("/todasAsFichas/:userId", async (req, res) => {
         res.status(400).json({ Error: err, ErrorMessage: `Erro ao tentar buscar todasAsFichas` });
     }
 });
-Router.post("/equipamentos/create/Armas", async (req, res) => {
+// ==========================================
+// EQUIPAMENTOS - CRUD COMPLETO
+// ==========================================
+// --- ARMAS ---
+Router.post(["/equipamentos/create/Armas", "/equipamentos/create/Arma"], async (req, res) => {
     try {
-        const { fichaId, nome, preco, dadoDeDano, alcance, peso, tipoDano, tipoArma, critico, multiplicador, descricao } = req.body;
+        const { fichaId, nome, preco, dadoDeDano, alcance, peso, tipoDano, atributo, tipoArma, critico, pericia, multiplicador, descricao, equiped } = req.body;
         const arma = await prisma.arma.create({
             data: {
-                fichaId: fichaId,
+                fichaId: Number(fichaId),
+                atributo,
+                pericia,
                 nome,
-                peso,
+                peso: Number(peso),
                 alcance,
-                preco,
+                preco: Number(preco),
                 tipoDano,
                 descricao,
-                critico,
+                critico: Number(critico),
                 tipoArma,
-                multiplicador,
-                dadoDeDano
+                multiplicador: Number(multiplicador),
+                dadoDeDano,
+                equiped: equiped !== undefined ? Boolean(equiped) : false
             }
         });
         res.status(201).json({ message: "Arma criada com sucesso", data: arma });
     }
     catch (err) {
-        res.status(400).json({ Error: err, ErrorMessage: `Erro ao tentar adicionarEquipamento` });
+        res.status(400).json({ Error: err, ErrorMessage: "Erro ao tentar adicionar arma" });
     }
 });
-Router.get("/equipamentos/listAll/Armas/:fichaId", async (req, res) => {
+Router.get(["/equipamentos/listAll/Armas/:fichaId", "/equipamentos/listAll/Arma/:fichaId"], async (req, res) => {
     const { fichaId } = req.params;
     const id = parseInt(`${fichaId}`);
     try {
@@ -228,13 +256,71 @@ Router.get("/equipamentos/listAll/Armas/:fichaId", async (req, res) => {
                 fichaId: id
             }
         });
-        return res.status(201).json({ message: "Armas listadas com sucesso", data: armas });
+        return res.status(200).json({ message: "Armas listadas com sucesso", data: armas });
     }
     catch (err) {
-        return res.status(400).json({ Error: err, ErrorMessage: `Erro ao ListarEquipamento` });
+        return res.status(400).json({ Error: err, ErrorMessage: "Erro ao listar armas" });
     }
 });
-Router.delete("/equipamentos/delete/Armas/:armaId", async (req, res) => {
+Router.get(["/equipamentos/get/Armas/:armaId", "/equipamentos/get/Arma/:armaId"], async (req, res) => {
+    const { armaId } = req.params;
+    const id = parseInt(`${armaId}`);
+    try {
+        const arma = await prisma.arma.findUnique({
+            where: { id }
+        });
+        if (!arma)
+            return res.status(404).json({ ErrorMessage: "Arma nao encontrada" });
+        return res.status(200).json({ message: "Arma encontrada com sucesso", data: arma });
+    }
+    catch (err) {
+        return res.status(400).json({ Error: err, ErrorMessage: "Erro ao buscar arma" });
+    }
+});
+Router.put(["/equipamentos/update/Armas/:armaId", "/equipamentos/update/Arma/:armaId"], async (req, res) => {
+    const { armaId } = req.params;
+    const id = parseInt(`${armaId}`);
+    const { nome, preco, dadoDeDano, alcance, peso, tipoDano, tipoArma, critico, multiplicador, atributo, descricao, pericia, equiped } = req.body;
+    const data = {};
+    if (nome !== undefined)
+        data.nome = nome;
+    if (preco !== undefined)
+        data.preco = Number(preco);
+    if (dadoDeDano !== undefined)
+        data.dadoDeDano = dadoDeDano;
+    if (alcance !== undefined)
+        data.alcance = alcance;
+    if (peso !== undefined)
+        data.peso = Number(peso);
+    if (tipoDano !== undefined)
+        data.tipoDano = tipoDano;
+    if (tipoArma !== undefined)
+        data.tipoArma = tipoArma;
+    if (critico !== undefined)
+        data.critico = Number(critico);
+    if (multiplicador !== undefined)
+        data.multiplicador = Number(multiplicador);
+    if (atributo !== undefined)
+        data.atributo = atributo;
+    if (descricao !== undefined)
+        data.descricao = descricao;
+    if (pericia !== undefined)
+        data.pericia = pericia;
+    if (equiped !== undefined)
+        data.equiped = Boolean(equiped);
+    try {
+        const arma = await prisma.arma.update({
+            where: { id },
+            data
+        });
+        res.status(200).json({ message: "Arma atualizada com sucesso", data: arma });
+    }
+    catch (err) {
+        console.log(err);
+        res.status(400).json({ Error: err, ErrorMessage: "Erro ao tentar atualizar arma" });
+    }
+});
+Router.delete(["/equipamentos/delete/Armas/:armaId", "/equipamentos/delete/Arma/:armaId"], async (req, res) => {
     const { armaId } = req.params;
     const id = parseInt(`${armaId}`);
     try {
@@ -243,35 +329,36 @@ Router.delete("/equipamentos/delete/Armas/:armaId", async (req, res) => {
                 id
             }
         });
-        res.status(200).json({ Sucess: "Sucesso, arma deletada com sucesso", ArmaDeletada });
+        res.status(200).json({ message: "Arma deletada com sucesso", ArmaDeletada });
     }
     catch (err) {
-        res.status(400).json({ Error: err, ErrorMessage: `Erro ao tentar deletar arma,tente novamente mais tarde ` });
+        res.status(400).json({ Error: err, ErrorMessage: "Erro ao tentar deletar arma" });
     }
 });
-//protecoes
-Router.post("/equipamentos/create/Protecao", async (req, res) => {
+// --- PROTEÇÕES ---
+Router.post(["/equipamentos/create/Protecao", "/equipamentos/create/Protecoes"], async (req, res) => {
     try {
-        const { fichaId, tipoProtecao, penalidade, nomeProtecao, preco, peso, descricao, bonus } = req.body;
+        const { fichaId, tipoProtecao, penalidade, nomeProtecao, preco, peso, descricao, bonus, equipada } = req.body;
         const protecao = await prisma.protecao.create({
             data: {
-                fichaId: fichaId,
+                fichaId: Number(fichaId),
                 nomeProtecao,
-                peso,
-                penalidade,
-                preco,
+                peso: Number(peso),
+                penalidade: Number(penalidade),
+                preco: Number(preco),
                 descricao,
-                bonus,
+                bonus: Number(bonus),
                 tipoProtecao,
+                equipada: equipada !== undefined ? Boolean(equipada) : false
             }
         });
-        res.status(201).json({ message: "Arma criada com sucesso", data: protecao });
+        res.status(201).json({ message: "Protecao criada com sucesso", data: protecao });
     }
     catch (err) {
-        res.status(400).json({ Error: err, ErrorMessage: `Erro ao tentar adicionarEquipamento` });
+        res.status(400).json({ Error: err, ErrorMessage: "Erro ao tentar adicionar protecao" });
     }
 });
-Router.get("/equipamentos/listAll/Protecao/:fichaId", async (req, res) => {
+Router.get(["/equipamentos/listAll/Protecao/:fichaId", "/equipamentos/listAll/Protecoes/:fichaId"], async (req, res) => {
     const { fichaId } = req.params;
     const id = parseInt(`${fichaId}`);
     try {
@@ -280,13 +367,60 @@ Router.get("/equipamentos/listAll/Protecao/:fichaId", async (req, res) => {
                 fichaId: id
             }
         });
-        return res.status(201).json({ message: "Protecoes listadas com sucesso", data: protecoes });
+        return res.status(200).json({ message: "Protecoes listadas com sucesso", data: protecoes });
     }
     catch (err) {
-        return res.status(400).json({ Error: err, ErrorMessage: `Erro ao ListarEquipamento` });
+        return res.status(400).json({ Error: err, ErrorMessage: "Erro ao listar protecoes" });
     }
 });
-Router.delete("/equipamentos/delete/Protecao/:id", async (req, res) => {
+Router.get(["/equipamentos/get/Protecao/:id", "/equipamentos/get/Protecoes/:id"], async (req, res) => {
+    const { id } = req.params;
+    try {
+        const protecao = await prisma.protecao.findUnique({
+            where: { id: Number(id) }
+        });
+        if (!protecao)
+            return res.status(404).json({ ErrorMessage: "Protecao nao encontrada" });
+        return res.status(200).json({ message: "Protecao encontrada com sucesso", data: protecao });
+    }
+    catch (err) {
+        return res.status(400).json({ Error: err, ErrorMessage: "Erro ao buscar protecao" });
+    }
+});
+Router.put(["/equipamentos/update/Protecao/:id", "/equipamentos/update/Protecoes/:id"], async (req, res) => {
+    const { id } = req.params;
+    const protecaoId = parseInt(`${id}`);
+    const { nomeProtecao, preco, bonus, penalidade, peso, tipoProtecao, equipada, descricao } = req.body;
+    const data = {};
+    if (nomeProtecao !== undefined)
+        data.nomeProtecao = nomeProtecao;
+    if (preco !== undefined)
+        data.preco = Number(preco);
+    if (bonus !== undefined)
+        data.bonus = Number(bonus);
+    if (penalidade !== undefined)
+        data.penalidade = Number(penalidade);
+    if (peso !== undefined)
+        data.peso = Number(peso);
+    if (tipoProtecao !== undefined)
+        data.tipoProtecao = tipoProtecao;
+    if (equipada !== undefined)
+        data.equipada = Boolean(equipada);
+    if (descricao !== undefined)
+        data.descricao = descricao;
+    try {
+        const protecao = await prisma.protecao.update({
+            where: { id: protecaoId },
+            data
+        });
+        res.status(200).json({ message: "Protecao atualizada com sucesso", data: protecao });
+    }
+    catch (err) {
+        console.log(err);
+        res.status(400).json({ Error: err, ErrorMessage: "Erro ao tentar atualizar protecao" });
+    }
+});
+Router.delete(["/equipamentos/delete/Protecao/:id", "/equipamentos/delete/Protecoes/:id"], async (req, res) => {
     const { id } = req.params;
     const protecaoId = parseInt(`${id}`);
     try {
@@ -295,10 +429,191 @@ Router.delete("/equipamentos/delete/Protecao/:id", async (req, res) => {
                 id: protecaoId
             }
         });
-        res.status(200).json({ Sucess: "Sucesso, protecao deletada com sucesso", ProtecaoDeletada });
+        res.status(200).json({ message: "Protecao deletada com sucesso", ProtecaoDeletada });
     }
     catch (err) {
-        res.status(400).json({ Error: err, ErrorMessage: `Erro ao tentar deletar arma,tente novamente mais tarde ` });
+        res.status(400).json({ Error: err, ErrorMessage: "Erro ao tentar deletar protecao" });
+    }
+});
+// --- ITENS GERAIS ---
+Router.post("/equipamentos/create/Geral", async (req, res) => {
+    try {
+        const { fichaId, tipoItemGeral, preco } = req.body;
+        const geral = await prisma.geral.create({
+            data: {
+                fichaId: Number(fichaId),
+                tipoItemGeral,
+                preco: Number(preco)
+            }
+        });
+        res.status(201).json({ message: "Item Geral criado com sucesso", data: geral });
+    }
+    catch (err) {
+        res.status(400).json({ Error: err, ErrorMessage: "Erro ao tentar adicionar item geral" });
+    }
+});
+Router.get("/equipamentos/listAll/Geral/:fichaId", async (req, res) => {
+    const { fichaId } = req.params;
+    try {
+        const gerais = await prisma.geral.findMany({
+            where: { fichaId: Number(fichaId) }
+        });
+        return res.status(200).json({ message: "Itens Gerais listados com sucesso", data: gerais });
+    }
+    catch (err) {
+        return res.status(400).json({ Error: err, ErrorMessage: "Erro ao listar itens gerais" });
+    }
+});
+Router.get("/equipamentos/get/Geral/:id", async (req, res) => {
+    const { id } = req.params;
+    try {
+        const geral = await prisma.geral.findUnique({
+            where: { id: Number(id) }
+        });
+        if (!geral)
+            return res.status(404).json({ ErrorMessage: "Item Geral nao encontrado" });
+        return res.status(200).json({ message: "Item Geral encontrado com sucesso", data: geral });
+    }
+    catch (err) {
+        return res.status(400).json({ Error: err, ErrorMessage: "Erro ao buscar item geral" });
+    }
+});
+Router.put("/equipamentos/update/Geral/:id", async (req, res) => {
+    const { id } = req.params;
+    const { tipoItemGeral, preco } = req.body;
+    const data = {};
+    if (tipoItemGeral !== undefined)
+        data.tipoItemGeral = tipoItemGeral;
+    if (preco !== undefined)
+        data.preco = Number(preco);
+    try {
+        const geral = await prisma.geral.update({
+            where: { id: Number(id) },
+            data
+        });
+        res.status(200).json({ message: "Item Geral atualizado com sucesso", data: geral });
+    }
+    catch (err) {
+        res.status(400).json({ Error: err, ErrorMessage: "Erro ao tentar atualizar item geral" });
+    }
+});
+Router.delete("/equipamentos/delete/Geral/:id", async (req, res) => {
+    const { id } = req.params;
+    try {
+        const geralDeletado = await prisma.geral.delete({
+            where: { id: Number(id) }
+        });
+        res.status(200).json({ message: "Item Geral deletado com sucesso", geralDeletado });
+    }
+    catch (err) {
+        res.status(400).json({ Error: err, ErrorMessage: "Erro ao tentar deletar item geral" });
+    }
+});
+// --- ITENS (MODEL ITEM) ---
+Router.post(["/equipamentos/create/Item", "/equipamentos/create/Itens"], async (req, res) => {
+    try {
+        const { fichaId, nome, peso, descricao } = req.body;
+        const data = {
+            nome,
+            peso: Number(peso),
+            descricao
+        };
+        if (fichaId !== undefined && fichaId !== null) {
+            data.fichaId = Number(fichaId);
+        }
+        const item = await prisma.item.create({
+            data
+        });
+        res.status(201).json({ message: "Item criado com sucesso", data: item });
+    }
+    catch (err) {
+        res.status(400).json({ Error: err, ErrorMessage: "Erro ao tentar criar item" });
+    }
+});
+Router.get(["/equipamentos/listAll/Item/:fichaId", "/equipamentos/listAll/Itens/:fichaId"], async (req, res) => {
+    const { fichaId } = req.params;
+    try {
+        const items = await prisma.item.findMany({
+            where: { fichaId: Number(fichaId) }
+        });
+        return res.status(200).json({ message: "Itens listados com sucesso", data: items });
+    }
+    catch (err) {
+        return res.status(400).json({ Error: err, ErrorMessage: "Erro ao listar itens" });
+    }
+});
+Router.get(["/equipamentos/get/Item/:id", "/equipamentos/get/Itens/:id"], async (req, res) => {
+    const { id } = req.params;
+    try {
+        const item = await prisma.item.findUnique({
+            where: { id: Number(id) }
+        });
+        if (!item)
+            return res.status(404).json({ ErrorMessage: "Item nao encontrado" });
+        return res.status(200).json({ message: "Item encontrado com sucesso", data: item });
+    }
+    catch (err) {
+        return res.status(400).json({ Error: err, ErrorMessage: "Erro ao buscar item" });
+    }
+});
+Router.put(["/equipamentos/update/Item/:id", "/equipamentos/update/Itens/:id"], async (req, res) => {
+    const { id } = req.params;
+    const { nome, peso, descricao, fichaId } = req.body;
+    const data = {};
+    if (nome !== undefined)
+        data.nome = nome;
+    if (peso !== undefined)
+        data.peso = Number(peso);
+    if (descricao !== undefined)
+        data.descricao = descricao;
+    if (fichaId !== undefined)
+        data.fichaId = fichaId !== null ? Number(fichaId) : null;
+    try {
+        const item = await prisma.item.update({
+            where: { id: Number(id) },
+            data
+        });
+        res.status(200).json({ message: "Item atualizado com sucesso", data: item });
+    }
+    catch (err) {
+        res.status(400).json({ Error: err, ErrorMessage: "Erro ao tentar atualizar item" });
+    }
+});
+Router.delete(["/equipamentos/delete/Item/:id", "/equipamentos/delete/Itens/:id"], async (req, res) => {
+    const { id } = req.params;
+    try {
+        const itemDeletado = await prisma.item.delete({
+            where: { id: Number(id) }
+        });
+        res.status(200).json({ message: "Item deletado com sucesso", itemDeletado });
+    }
+    catch (err) {
+        res.status(400).json({ Error: err, ErrorMessage: "Erro ao tentar deletar item" });
+    }
+});
+// --- LISTAR TODOS OS EQUIPAMENTOS DA FICHA ---
+Router.get("/equipamentos/listAll/:fichaId", async (req, res) => {
+    const { fichaId } = req.params;
+    const id = Number(fichaId);
+    try {
+        const [armas, protecoes, gerais, items] = await Promise.all([
+            prisma.arma.findMany({ where: { fichaId: id } }),
+            prisma.protecao.findMany({ where: { fichaId: id } }),
+            prisma.geral.findMany({ where: { fichaId: id } }),
+            prisma.item.findMany({ where: { fichaId: id } })
+        ]);
+        return res.status(200).json({
+            message: "Todos os equipamentos listados com sucesso",
+            data: {
+                armas,
+                protecoes,
+                gerais,
+                items
+            }
+        });
+    }
+    catch (err) {
+        return res.status(400).json({ Error: err, ErrorMessage: "Erro ao listar todos os equipamentos" });
     }
 });
 Router.post("/magias/create/", async (req, res) => {
@@ -316,7 +631,7 @@ Router.post("/magias/create/", async (req, res) => {
                 descricao,
                 tipoMagia,
                 Circulo,
-                fichaId
+                fichaId: Number(fichaId)
             }
         });
         res.status(200).json({ Sucess: "Sucesso, magia criada com sucesso", data: magia });
@@ -326,7 +641,7 @@ Router.post("/magias/create/", async (req, res) => {
         return res.status(400).json({ Error: err, ErrorMessage: "Erro nao foi possivel criar magia" });
     }
 });
-Router.post("/magias/delete/:id", async (req, res) => {
+Router.delete("/magias/delete/:id", async (req, res) => {
     const { id } = req.params;
     const magiaId = parseInt(`${id}`);
     try {
@@ -342,14 +657,94 @@ Router.post("/magias/delete/:id", async (req, res) => {
         return res.status(400).json({ Error: err, ErrorMessage: "Erro nao foi possivel criar magia" });
     }
 });
-Router.post("/magias/listAll/", async (req, res) => {
+Router.get("/magias/list/:fichaId", async (req, res) => {
+    const { fichaId } = req.params;
     try {
-        const magias = await prisma.magia.findMany();
-        res.status(200).json({ Sucess: "Sucesso", data: magias });
+        const magias = await prisma.magia.findMany({
+            where: { fichaId: Number(fichaId) }
+        });
+        console.log(magias);
+        res.status(200).json({ Sucesso: "Sucesso magias listadas com sucesso", magias });
     }
     catch (err) {
         console.log(err);
-        return res.status(400).json({ Error: err, ErrorMessage: "Erro nao foi possivel criar magia" });
+        return res.status(400).json({ Erro: err, ErroMessage: "Erro ao listar magias" });
+    }
+});
+// Habilidades
+Router.post("/habilidades/create/", async (req, res) => {
+    const { nome, descricao, classe, gastoPe, fichaId } = req.body;
+    try {
+        const habilidade = await prisma.habilidade.create({
+            data: {
+                nome,
+                classe,
+                descricao,
+                gastoPe,
+                fichaId
+            }
+        });
+        res.status(200).json({ Sucess: "Sucesso, habilidade criada com sucesso", data: habilidade });
+    }
+    catch (err) {
+        console.log(err);
+        return res.status(400).json({ Error: err, ErrorMessage: "Erro nao foi possivel criar habilidade" });
+    }
+});
+Router.post("/habilidades/delete/:id", async (req, res) => {
+    const { id } = req.params;
+    const habilidadeId = parseInt(`${id}`);
+    try {
+        const habilidade = await prisma.habilidade.delete({
+            where: {
+                id: habilidadeId
+            }
+        });
+        res.status(200).json({ Sucess: "Sucesso, habilidade deletada com sucesso", data: habilidade });
+    }
+    catch (err) {
+        console.log(err);
+        return res.status(400).json({ Error: err, ErrorMessage: "Erro nao foi possivel deletar habilidade" });
+    }
+});
+Router.put("/habilidades/update/:id", async (req, res) => {
+    const { id } = req.params;
+    const habilidadeId = parseInt(`${id}`);
+    const { nome, descricao, gastoPe, fichaId, classe } = req.body;
+    const data = {};
+    if (nome !== undefined)
+        data.nome = nome;
+    if (descricao !== undefined)
+        data.descricao = descricao;
+    if (gastoPe !== undefined)
+        data.gastoPe = gastoPe;
+    if (fichaId !== undefined)
+        data.fichaId = Number(fichaId);
+    if (classe !== undefined)
+        data.classe = classe;
+    try {
+        const habilidade = await prisma.habilidade.update({
+            where: { id: habilidadeId },
+            data
+        });
+        res.status(200).json({ Sucess: "Sucesso, habilidade atualizada com sucesso", data: habilidade });
+    }
+    catch (err) {
+        console.log(err);
+        return res.status(400).json({ Error: err, ErrorMessage: "Erro nao foi possivel atualizar habilidade" });
+    }
+});
+Router.get("/habilidades/list/:fichaId", async (req, res) => {
+    const { fichaId } = req.params;
+    try {
+        const habilidades = await prisma.habilidade.findMany({
+            where: { fichaId: Number(fichaId) }
+        });
+        res.status(200).json({ Sucesso: "Sucesso habilidades listadas com sucesso", habilidades });
+    }
+    catch (err) {
+        console.log(err);
+        return res.status(400).json({ Erro: err, ErroMessage: "Erro ao listar habilidades" });
     }
 });
 Router.get("/pericias/list/:fichaId", async (req, res) => {
@@ -384,6 +779,213 @@ Router.put("/pericias/update/:periciaId", async (req, res) => {
         res.status(400).json({ Error: err, ErrorMessage: "Erro ao criar as pericias" });
     }
 });
+Router.post("/protecoes/create/:fichaId", async (req, res) => {
+    const { preco, nomeProtecao, penalidade, peso, equipada, descricao, tipoProtecao, bonus } = req.body;
+    const { fichaId } = req.params;
+    try {
+        const protecao = await prisma.protecao.create({
+            data: {
+                preco,
+                nomeProtecao,
+                penalidade,
+                peso,
+                equipada,
+                descricao,
+                tipoProtecao,
+                bonus,
+                fichaId: Number(fichaId)
+            }
+        });
+        console.log(protecao);
+        return res.status(200).json({ Sucess: "Sucesso ao criar protecao", protecao });
+    }
+    catch (err) {
+        return res.status(400).json({ Erro: err, ErroMessage: "Erro ao criar protecao,tente novamente mais tarde" });
+    }
+});
+Router.post("/protecoes/atualize/equiped/:id", async (req, res) => {
+    const { equiped } = req.body;
+    const { id } = req.params;
+    try {
+        const protecao = await prisma.protecao.update({
+            where: { id: Number(id) },
+            data: { equipada: equiped }
+        });
+        console.log(protecao);
+        return res.status(200).json({ Sucess: "Sucesso ao criar protecao", protecao });
+    }
+    catch (err) {
+        return res.status(400).json({ Erro: err, ErroMessage: "Erro ao criar protecao,tente novamente mais tarde" });
+    }
+});
 //Campanhas
+Router.post("/campanha/create/", async (req, res) => {
+    const { nomeCampanha, playerMasterId } = req.body;
+    const chaveLink = crypto.randomUUID();
+    try {
+        let findPlayer = await prisma.user.findUnique({
+            where: {
+                id: playerMasterId
+            }
+        });
+        console.log(findPlayer);
+        if (findPlayer) {
+            const campanha = await prisma.campanha.create({
+                data: {
+                    nomeCampanha, chaveLink, playerMestreId: Number(playerMasterId),
+                    players: { connect: { id: playerMasterId } }
+                }
+            });
+            console.log(campanha);
+            return res.status(200).json({ Sucess: "Sucesso ao criar campanha", campanha });
+        }
+        else
+            return res.status(400).json({ ErroMessage: "Erro ao achar usuario mestre,tente novamente mais tarde" });
+    }
+    catch (err) {
+        return res.status(400).json({ Erro: err, ErroMessage: "Erro ao criar campanha,tente novamente mais tarde" });
+    }
+});
+Router.get("/campanha/listMestre/:playerMestreId", async (req, res) => {
+    const { playerMestreId } = req.params;
+    try {
+        const campanhas = await prisma.campanha.findMany({
+            where: {
+                playerMestreId: Number(playerMestreId)
+            }
+        });
+        console.log(campanhas);
+        return res.status(200).json({ Sucess: "Sucesso ao listar campanhas", campanhas });
+    }
+    catch (err) {
+        console.log(err);
+        return res.status(400).json({ Erro: err, ErroMessage: "Erro ao listar as campanhas" });
+    }
+});
+Router.get("/campanha/list/:id", async (req, res) => {
+    const { id } = req.params;
+    try {
+        const campanhas = await prisma.user.findMany({
+            where: { id: Number(id) },
+            select: { campanhas: true }
+        });
+        console.log(campanhas);
+        return res.status(200).json({ Sucess: "Sucesso ao listar campanhas", campanhas });
+    }
+    catch (err) {
+        console.log(err);
+        return res.status(400).json({ Erro: err, ErroMessage: "Erro ao listar as campanhas" });
+    }
+});
+Router.delete("/campanha/delete/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+        const campanhaDeletada = await prisma.campanha.delete({
+            where: {
+                id: Number(id)
+            }
+        });
+        return res.status(200).json({ Sucesso: "Deletado com sucesso", campanhaDeletada });
+    }
+    catch (err) {
+        console.log(err);
+        return res.status(400).json({ Erro: err, ErroMessage: "Erro ao deletar campanha" });
+    }
+});
+Router.post("/campanha/find/:chaveLink", async (req, res) => {
+    const { chaveLink } = req.params;
+    const { userId } = req.body;
+    const chave = `${chaveLink}`;
+    try {
+        const campanhaFinded = await prisma.campanha.findFirst({
+            where: {
+                chaveLink: chave
+            }
+        });
+        if (!campanhaFinded)
+            return res.status(400).json({ ErroMessage: "Erro fiquei com preguica" });
+        const campanha = await prisma.campanha.update({
+            where: { id: campanhaFinded.id },
+            data: { players: { connect: { id: userId } } }
+        });
+        console.log(campanha);
+        return res.status(200).json({ Sucesso: "Inscrito na campanha cm sucesso", campanhaFinded });
+    }
+    catch (err) {
+        console.log(err);
+        return res.status(400).json({ Erro: err, ErroMessage: "Erro fiquei com preguica" });
+    }
+});
+Router.get("/campanha/list/players/:campanhaId", async (req, res) => {
+    const { campanhaId } = req.params;
+    try {
+        const players = await prisma.campanha.findMany({
+            where: { id: Number(campanhaId) },
+            select: { players: true, id: true }
+        });
+        return res.status(200).json({ Sucess: "Listado com sucesso", players });
+    }
+    catch (err) {
+        return res.status(400).json({ Erro: err });
+    }
+});
+Router.delete("/campanha/mestre/remove/:playerId/:campanhaId", async (req, res) => {
+    const { playerId, campanhaId } = req.params;
+    try {
+        const players = await prisma.campanha.update({
+            where: { id: Number(campanhaId) },
+            data: {
+                players: { disconnect: { id: Number(playerId) } }
+            }
+        });
+        return res.status(200).json({ Sucess: "Removido com sucesso", players });
+    }
+    catch (err) {
+        return res.status(400).json({ Erro: err });
+    }
+});
+Router.get("/campanha/mestre/list/fichas/:campanhaId", async (req, res) => {
+    const { campanhaId } = req.params;
+    try {
+        const fichas = await prisma.campanha.findFirst({
+            where: { id: Number(campanhaId) },
+            select: { fichas: true }
+        });
+        return res.status(200).json({ Sucess: "Listadas com sucesso", fichas });
+    }
+    catch (err) {
+        return res.status(400).json({ Erro: err });
+    }
+});
+Router.post("/ficha/add/:campanhaId/:fichaId", async (req, res) => {
+    const { campanhaId, fichaId } = req.params;
+    try {
+        const campanhaFicha = await prisma.campanha.update({
+            where: { id: Number(campanhaId) },
+            data: { fichas: { connect: { id: Number(fichaId) } } }
+        });
+        console.log(campanhaFicha);
+        res.status(200).json({ Sucess: "Ficha adicionada com sucess", campanhaFicha });
+    }
+    catch (err) {
+        console.log(err);
+        res.status(400).json({ Err: err, ErroMessage: "Erro ao adicionar ficha" });
+    }
+});
+Router.delete("/ficha/remove/:campanhaId/:fichaId", async (req, res) => {
+    const { campanhaId, fichaId } = req.params;
+    try {
+        const campanhaFicha = await prisma.campanha.update({
+            where: { id: Number(campanhaId) },
+            data: { fichas: { disconnect: { id: Number(fichaId) } } }
+        });
+        console.log(campanhaFicha);
+        res.status(200).json({ Sucess: "Ficha removida com sucess", campanhaFicha });
+    }
+    catch (err) {
+        console.log(err);
+        res.status(400).json({ Err: err, ErroMessage: "Erro ao remover ficha" });
+    }
+});
 export default Router;
 //# sourceMappingURL=routes.js.map

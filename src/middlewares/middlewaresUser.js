@@ -1,5 +1,5 @@
 import * as z from "zod";
-import { prisma } from "../main";
+import { prisma } from "../app.js";
 const userRegister = z.object({
     nome: z.string(),
     email: z.email({ error: "Email incorreto" })

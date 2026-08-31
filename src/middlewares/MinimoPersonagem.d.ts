@@ -8,7 +8,6 @@ declare const ObrigatorioDoPersonagem: z.ZodObject<{
     origem: z.ZodString;
     classe: z.ZodString;
     nivel: z.ZodNumber;
-    defesa: z.ZodNumber;
     for: z.ZodNumber;
     con: z.ZodNumber;
     des: z.ZodNumber;

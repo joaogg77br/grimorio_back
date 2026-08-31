@@ -7,7 +7,7 @@
 
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
-    "module": "EsNext",
+    "module": "NodeNext",
     "target": "ES2023",
     "types": ["node"],
     // For nodejs:
