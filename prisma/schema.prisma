@@ -1,0 +1,166 @@
+datasource db {
+  provider = "postgresql" // Ajuste para seu banco (postgresql, mysql, sqlite, etc.)
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id         Int        @id @default(autoincrement())
+  email      String     @unique
+  name       String
+  fichas     Ficha[]
+  campanhas  Campanha[]
+  campanhaId Int?
+}
+
+model Ficha {
+  id Int @id @default(autoincrement())
+
+  // Identidade
+  nomeJogador    String
+  nomePersonagem String
+  raca           String
+  classe         String
+  origem         String
+  nivel          Int     @default(1)
+  divindade      String?
+  pvCurrent      Int
+  pmCurrent      Int
+
+  // Atributos
+  for Int
+  int Int
+  des Int
+  con Int
+  sab Int
+  car Int
+
+  // Valores Derivados
+  pvMax        Int
+  pmMax        Int
+  defesa       Defesa?
+  deslocamento Int
+  tibao        Int
+  // Relações
+  jogador      User    @relation(fields: [jogadorId], references: [id], onDelete: Cascade)
+  jogadorId    Int
+
+  items       Item[]
+  armas       Arma[]
+  protecoes   Protecao[]
+  gerais      Geral[]
+  magias      Magia[]
+  habilidades Habilidade[]
+  pericias    Pericia[]
+  campanha    Campanha[]
+  campanhaId  Int?
+}
+
+model Defesa {
+  id        Int    @id @default(autoincrement())
+  outros    Int
+  atributos String @default("Des")
+  ficha     Ficha  @relation(fields: [fichaId], references: [id])
+  fichaId   Int    @unique
+}
+
+model Pericia {
+  id            Int    @id @default(autoincrement())
+  atributo      String
+  nome          String
+  metadeDoNivel Int
+  treino        Int
+  outros        Int
+  ficha         Ficha  @relation(fields: [fichaId], references: [id])
+  fichaId       Int
+}
+
+model Arma {
+  id            Int     @id @default(autoincrement())
+  nome          String // Corrigido de Int para String
+  preco         Int
+  dadoDeDano    String // Ex: "1d6", "2d8" costumam ser strings
+  alcance       String
+  peso          Float
+  tipoDano      String
+  tipoArma      String
+  critico       Int
+  multiplicador Int
+  atributo      String
+  descricao     String?
+  pericia       String
+  equiped       Boolean @default(false)
+
+  ficha   Ficha @relation(fields: [fichaId], references: [id], onDelete: Cascade)
+  fichaId Int
+}
+
+model Protecao {
+  id           Int     @id @default(autoincrement())
+  nomeProtecao String
+  preco        Int
+  bonus        Int
+  penalidade   Int
+  peso         Float
+  tipoProtecao String
+  equipada     Boolean @default(false)
+  descricao    String?
+
+  ficha   Ficha @relation(fields: [fichaId], references: [id], onDelete: Cascade)
+  fichaId Int
+}
+
+model Geral {
+  id            Int    @id @default(autoincrement())
+  tipoItemGeral String
+  preco         Int
+
+  ficha   Ficha @relation(fields: [fichaId], references: [id], onDelete: Cascade)
+  fichaId Int
+}
+
+model Habilidade {
+  id        Int    @id @default(autoincrement())
+  nome      String
+  descricao String
+  gastoPe   Int?
+  classe    String
+  ficha     Ficha  @relation(fields: [fichaId], references: [id])
+  fichaId   Int
+}
+
+model Magia {
+  id        Int     @id @default(autoincrement())
+  execucao  String
+  alcance   String
+  alvo      String
+  duracao   String
+  truque    String?
+  gastoPe   Int
+  descricao String
+  nome      String
+  tipoMagia String
+  Circulo   String
+  ficha     Ficha   @relation(fields: [fichaId], references: [id])
+  fichaId   Int
+}
+
+model Item {
+  id        Int    @id @default(autoincrement())
+  nome      String
+  peso      Float
+  descricao String
+  ficha     Ficha? @relation(fields: [fichaId], references: [id], onDelete: Cascade)
+  fichaId   Int?
+}
+
+model Campanha {
+  id             Int     @id @default(autoincrement())
+  players        User[]
+  playerMestreId Int
+  nomeCampanha   String
+  fichas         Ficha[]
+  chaveLink      String
+}
