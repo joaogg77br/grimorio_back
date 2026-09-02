@@ -725,7 +725,7 @@ Router.post("/magias/create/", async (req: Request, res: Response) => {
   }
 })
 
-Router.put("/magia/update/:magiasId", async (req: Request, res: Response) => {
+Router.put("/magia/update/:magiaId", async (req: Request, res: Response) => {
   const { magiaId } = req.params;
   const data: Magias = req.body;
 
