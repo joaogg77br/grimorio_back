@@ -13,5 +13,6 @@ app.use(cors());
 app.use(express.json());
 app.use(Router)
 export { prisma }
+app.listen(PORT, () => { console.log("bomdia") })
 export default app
 
