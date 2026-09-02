@@ -725,14 +725,15 @@ Router.post("/magias/create/", async (req: Request, res: Response) => {
   }
 })
 
-Router.put("/magia/update/:magiaId", async (req: Request, res: Response) => {
-  const { magiaId } = req.params;
+Router.put("/magia/update/:magiaId/:fichaId", async (req: Request, res: Response) => {
+  const { magiaId, fichaId } = req.params;
   const data: Magias = req.body;
 
   try {
     const magias = await prisma.magia.update({
       where: {
-        id: Number(magiaId)
+        id: Number(magiaId),
+        fichaId: Number(fichaId)
       },
       data
     })
