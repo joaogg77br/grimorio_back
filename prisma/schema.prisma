@@ -64,7 +64,7 @@ model Defesa {
   id        Int    @id @default(autoincrement())
   outros    Int
   atributos String @default("Des")
-  ficha     Ficha  @relation(fields: [fichaId], references: [id])
+  ficha     Ficha  @relation(fields: [fichaId], references: [id], onDelete: Cascade)
   fichaId   Int    @unique
 }
 
