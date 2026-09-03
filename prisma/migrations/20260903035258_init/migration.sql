@@ -20,6 +20,7 @@ CREATE TABLE "Ficha" (
     "divindade" TEXT,
     "pvCurrent" INTEGER NOT NULL,
     "pmCurrent" INTEGER NOT NULL,
+    "descricao" TEXT,
     "for" INTEGER NOT NULL,
     "int" INTEGER NOT NULL,
     "des" INTEGER NOT NULL,
@@ -78,6 +79,15 @@ CREATE TABLE "Arma" (
     "fichaId" INTEGER NOT NULL,
 
     CONSTRAINT "Arma_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Historico" (
+    "id" SERIAL NOT NULL,
+    "value" TEXT NOT NULL,
+    "fichaId" INTEGER,
+
+    CONSTRAINT "Historico_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -196,6 +206,9 @@ ALTER TABLE "Pericia" ADD CONSTRAINT "Pericia_fichaId_fkey" FOREIGN KEY ("fichaI
 
 -- AddForeignKey
 ALTER TABLE "Arma" ADD CONSTRAINT "Arma_fichaId_fkey" FOREIGN KEY ("fichaId") REFERENCES "Ficha"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Historico" ADD CONSTRAINT "Historico_fichaId_fkey" FOREIGN KEY ("fichaId") REFERENCES "Ficha"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Protecao" ADD CONSTRAINT "Protecao_fichaId_fkey" FOREIGN KEY ("fichaId") REFERENCES "Ficha"("id") ON DELETE CASCADE ON UPDATE CASCADE;

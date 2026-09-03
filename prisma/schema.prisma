@@ -28,6 +28,7 @@ model Ficha {
   divindade      String?
   pvCurrent      Int
   pmCurrent      Int
+  descricao      String?
 
   // Atributos
   for Int
@@ -55,6 +56,7 @@ model Ficha {
   habilidades Habilidade[]
   pericias    Pericia[]
   campanha    Campanha[]
+  historico   Historico[]
   campanhaId  Int?
 }
 
@@ -95,6 +97,13 @@ model Arma {
 
   ficha   Ficha @relation(fields: [fichaId], references: [id], onDelete: Cascade)
   fichaId Int
+}
+
+model Historico {
+  id      Int    @id @default(autoincrement())
+  value   String
+  ficha   Ficha? @relation(fields: [fichaId], references: [id])
+  fichaId Int?
 }
 
 model Protecao {

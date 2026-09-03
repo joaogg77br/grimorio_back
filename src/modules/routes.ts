@@ -58,6 +58,7 @@ type PersonagemCreateData = {
   deslocamento: number;
   tibao: any;
   jogadorId: number;
+  descricao?: string;
   pericias: Pericias[];
 };
 
@@ -87,6 +88,7 @@ type PersonagemUpdateData = {
   pmCurrent?: number;
   deslocamento?: number;
   tibao?: any;
+  descricao?: string
 };
 
 
@@ -165,6 +167,7 @@ Router.post("/create/personagem", MinHeroStatus, async (req: Request, res: Respo
     deslocamento,
     tibao,
     jogadorId,
+    descricao,
     pericias
   }: PersonagemCreateData = req.body;
 
@@ -190,6 +193,7 @@ Router.post("/create/personagem", MinHeroStatus, async (req: Request, res: Respo
         pmCurrent: Number(pmCurrent),
         tibao,
         deslocamento: Number(deslocamento),
+        descricao: descricao ?? null,
         jogadorId: Number(jogadorId),
         defesa: {
           create: {
@@ -248,6 +252,7 @@ Router.put("/atualize/ficha/personagem/:fichaId", async (req: Request, res: Resp
   if (req.body.deslocamento !== undefined) data.deslocamento = req.body.deslocamento;
   if (req.body.tibao !== undefined) data.tibao = req.body.tibao;
   if (req.body.nomePersonagem !== undefined) data.nomePersonagem = req.body.nomePersonagem
+  if (req.body.descricao !== undefined) data.descricao = req.body.descricao
   // ... demais campos escalares iguais ...
 
   if (req.body.defesa !== undefined) {
@@ -1094,6 +1099,84 @@ Router.delete("/ficha/remove/:campanhaId/:fichaId", async (req: Request, res: Re
     res.status(400).json({ Err: err, ErroMessage: "Erro ao remover ficha" })
   }
 })
+
+Router.post("/historico/create/:fichaId", async (req: Request, res: Response) => {
+  const { value } = req.body;
+  const { fichaId } = req.params;
+  try {
+    const historico = await prisma.historico.create({
+      data: {
+        fichaId: Number(fichaId),
+        value
+      }
+    })
+    console.log("Sucesso",)
+    return res.status(200).json({ Sucess: "Historico adicionado com sucesso", historico })
+
+  } catch (err) {
+    console.log(err)
+    res.status(400).json({ Erro: err, ErroMessage: "Erro ao adicionar historico" })
+
+  }
+})
+
+Router.put("/historico/update/:id", async (req: Request, res: Response) => {
+  const { value } = req.body;
+  const { id } = req.params;
+  try {
+    const historico = await prisma.historico.update({
+      where: {
+        id: Number(id),
+      },
+      data: {
+        value
+      }
+    })
+    console.log("Sucesso",)
+    return res.status(200).json({ Sucess: "Historico atualizado com sucesso", historico })
+
+  } catch (err) {
+    console.log(err)
+    res.status(400).json({ Erro: err, ErroMessage: "Erro ao atualizado historico" })
+  }
+})
+
+Router.get("/historico/list/:fichaId", async (req: Request, res: Response) => {
+  const { fichaId } = req.params;
+  try {
+    const historico = await prisma.historico.findMany({
+      where: { fichaId: Number(fichaId), }
+    })
+    console.log("Sucesso",)
+    return res.status(200).json({ Sucess: "Historico listado com sucesso", historico })
+
+  } catch (err) {
+    console.log(err)
+    res.status(400).json({ Erro: err, ErroMessage: "Erro ao listar historico" })
+  }
+})
+
+
+
+
+Router.delete("/historico/delete/:historicoId", async (req: Request, res: Response) => {
+  const { historicoId } = req.params;
+  try {
+    const historico = await prisma.historico.delete({
+      where: {
+        id: Number(historicoId),
+      }
+    })
+    console.log("Sucesso,historico deletado", historico)
+    return res.status(200).json({ Sucess: "Historico deletado com sucesso", historico })
+
+  } catch (err) {
+    console.log(err)
+    res.status(400).json({ Erro: err, ErroMessage: "Erro ao deletar historico" })
+
+  }
+})
+
 
 export default Router;
 
