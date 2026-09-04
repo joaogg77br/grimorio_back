@@ -12,7 +12,13 @@ const PORT = 3000
 const connectionString = `${process.env.DATABASE_URL}`;
 const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter })
-const io = new Server(server)
+const io = new Server(server, {
+  cors: {
+    origin: ["http://localhost:5173", "https://grimoriothamatof.vercel.app"],
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+})
 
 io.on("connection", (socket) => {
   console.log("usuario conectado")
