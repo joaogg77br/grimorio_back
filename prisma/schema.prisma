@@ -29,6 +29,7 @@ model Ficha {
   pvCurrent      Int
   pmCurrent      Int
   descricao      String?
+  tamanho        String  @default("Medio")
 
   // Atributos
   for Int
@@ -75,7 +76,7 @@ model Pericia {
   metadeDoNivel Int
   treino        Int
   outros        Int
-  ficha         Ficha  @relation(fields: [fichaId], references: [id])
+  ficha         Ficha  @relation(fields: [fichaId], references: [id], onDelete: Cascade)
   fichaId       Int
 }
 
@@ -136,7 +137,7 @@ model Habilidade {
   descricao String
   gastoPe   Int?
   classe    String
-  ficha     Ficha  @relation(fields: [fichaId], references: [id])
+  ficha     Ficha  @relation(fields: [fichaId], references: [id], onDelete: Cascade)
   fichaId   Int
 }
 
@@ -152,7 +153,7 @@ model Magia {
   nome      String
   tipoMagia String
   Circulo   String
-  ficha     Ficha   @relation(fields: [fichaId], references: [id])
+  ficha     Ficha   @relation(fields: [fichaId], references: [id], onDelete: Cascade)
   fichaId   Int
 }
 

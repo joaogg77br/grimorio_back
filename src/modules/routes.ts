@@ -60,6 +60,7 @@ type PersonagemCreateData = {
   jogadorId: number;
   descricao?: string;
   pericias: Pericias[];
+  tamanho: String;
 };
 
 type PersonagemUpdateData = {
@@ -88,7 +89,8 @@ type PersonagemUpdateData = {
   pmCurrent?: number;
   deslocamento?: number;
   tibao?: any;
-  descricao?: string
+  descricao?: string;
+  tamanho?: string;
 };
 
 
@@ -168,7 +170,8 @@ Router.post("/create/personagem", MinHeroStatus, async (req: Request, res: Respo
     tibao,
     jogadorId,
     descricao,
-    pericias
+    pericias,
+    tamanho
   }: PersonagemCreateData = req.body;
 
   try {
@@ -192,6 +195,7 @@ Router.post("/create/personagem", MinHeroStatus, async (req: Request, res: Respo
         pvCurrent: Number(pvCurrent),
         pmCurrent: Number(pmCurrent),
         tibao,
+        tamanho,
         deslocamento: Number(deslocamento),
         descricao: descricao ?? null,
         jogadorId: Number(jogadorId),
@@ -253,6 +257,7 @@ Router.put("/atualize/ficha/personagem/:fichaId", async (req: Request, res: Resp
   if (req.body.tibao !== undefined) data.tibao = req.body.tibao;
   if (req.body.nomePersonagem !== undefined) data.nomePersonagem = req.body.nomePersonagem
   if (req.body.descricao !== undefined) data.descricao = req.body.descricao
+  if (req.body.tamanho !== undefined) data.tamanho = req.body.tamanho
   // ... demais campos escalares iguais ...
 
   if (req.body.defesa !== undefined) {
