@@ -24,5 +24,6 @@ app.use(Router)
 export { prisma }
 
 server.listen(PORT, () => { console.log("bomdia") })
-export default app
+export default server
+
 

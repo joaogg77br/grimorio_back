@@ -1178,6 +1178,7 @@ Router.delete("/historico/delete/:historicoId", async (req: Request, res: Respon
 
   }
 })
+
 Router.get("/", (req: Request, res: Response) => {
   res.send("abolsonaro meu presidente")
 })
