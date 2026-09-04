@@ -60,7 +60,7 @@ type PersonagemCreateData = {
   jogadorId: number;
   descricao?: string;
   pericias: Pericias[];
-  tamanho: String;
+  tamanho: string;
 };
 
 type PersonagemUpdateData = {
