@@ -1161,9 +1161,6 @@ Router.get("/historico/list/:fichaId", async (req: Request, res: Response) => {
   }
 })
 
-
-
-
 Router.delete("/historico/delete/:historicoId", async (req: Request, res: Response) => {
   const { historicoId } = req.params;
   try {
@@ -1180,6 +1177,9 @@ Router.delete("/historico/delete/:historicoId", async (req: Request, res: Respon
     res.status(400).json({ Erro: err, ErroMessage: "Erro ao deletar historico" })
 
   }
+})
+Router.get("/", (req: Request, res: Response) => {
+  res.send("abolsonaro meu presidente")
 })
 
 
