@@ -22,6 +22,13 @@ const io = new Server(server, {
 
 io.on("connection", (socket) => {
   console.log("usuario conectado")
+  socket.on("message", (data) => {
+    console.log("message", data)
+    socket.send(data)
+  })
+  socket.on("disconnect", () => {
+    console.log("usuario disconnected")
+  })
 })
 
 app.use(cors());
