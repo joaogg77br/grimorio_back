@@ -9,6 +9,7 @@ generator client {
 model User {
   id         Int        @id @default(autoincrement())
   email      String     @unique
+  password   String
   name       String
   fichas     Ficha[]
   campanhas  Campanha[]
@@ -167,10 +168,11 @@ model Item {
 }
 
 model Campanha {
-  id             Int     @id @default(autoincrement())
-  players        User[]
-  playerMestreId Int
-  nomeCampanha   String
-  fichas         Ficha[]
-  chaveLink      String
+  id               Int      @id @default(autoincrement())
+  players          User[]
+  playerMestreId   Int
+  nomeCampanha     String
+  fichas           Ficha[]
+  chaveLink        String
+  historicoRolagem String[]
 }

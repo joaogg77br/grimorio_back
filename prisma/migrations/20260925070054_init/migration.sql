@@ -2,6 +2,7 @@
 CREATE TABLE "User" (
     "id" SERIAL NOT NULL,
     "email" TEXT NOT NULL,
+    "password" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "campanhaId" INTEGER,
 
@@ -21,6 +22,7 @@ CREATE TABLE "Ficha" (
     "pvCurrent" INTEGER NOT NULL,
     "pmCurrent" INTEGER NOT NULL,
     "descricao" TEXT,
+    "tamanho" TEXT NOT NULL DEFAULT 'Medio',
     "for" INTEGER NOT NULL,
     "int" INTEGER NOT NULL,
     "des" INTEGER NOT NULL,
@@ -163,6 +165,7 @@ CREATE TABLE "Campanha" (
     "playerMestreId" INTEGER NOT NULL,
     "nomeCampanha" TEXT NOT NULL,
     "chaveLink" TEXT NOT NULL,
+    "historicoRolagem" TEXT[],
 
     CONSTRAINT "Campanha_pkey" PRIMARY KEY ("id")
 );

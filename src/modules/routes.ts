@@ -1,14 +1,22 @@
 import express from "express"
+const segredoJWT = process.env.JWT_SECRET
 import { type Request, type Response } from "express"
 import { prisma } from "../app.js"
 import { verificadorDeEmail } from "../middlewares/middlewaresUser.js";
 import { MinHeroStatus } from "../middlewares/MinimoPersonagem.js";
+import bcrypt from "bcrypt"
 import crypto from "crypto"
+import jwt from "jsonwebtoken"
+import VerifyLogin from "../middlewares/verifyLogin.js";
+
 
 const Router = express.Router();
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 type userRegister = {
   nome: string,
   emailUser: string,
+  password: string
 }
 
 type Magias = {
@@ -96,11 +104,14 @@ type PersonagemUpdateData = {
 
 //createUser
 Router.post("/create/user", verificadorDeEmail, async (req: Request, res: Response) => {
-  const { nome, emailUser }: userRegister = req.body;
+  const { nome, emailUser, password }: userRegister = req.body;
+  const secretPassword = await bcrypt.hash(password, 10)
+
   const user = await prisma.user.create({
     data: {
       name: nome,
       email: emailUser,
+      password: `${secretPassword}`
     },
     include: {
       fichas: true
@@ -109,6 +120,73 @@ Router.post("/create/user", verificadorDeEmail, async (req: Request, res: Respon
   res.status(200).json({ message: "Sucesso", user: user })
 })
 
+Router.put("/update/user/:id", VerifyLogin, async (req: Request, res: Response) => {
+  const userId = Number(req.params.id)
+  const name = typeof req.body.name === "string" ? req.body.name.trim() : ""
+  const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : ""
+
+  if (!Number.isInteger(userId) || userId <= 0) {
+    return res.status(400).json({ success: false, erro: "Id de usuário inválido" })
+  }
+  if (!name || !EMAIL_REGEX.test(email)) {
+    return res.status(400).json({ success: false, erro: "Nome ou e-mail inválido" })
+  }
+
+  try {
+    const authenticatedUser = await prisma.user.findUnique({
+      where: { email: res.locals.authEmail },
+      select: { id: true }
+    })
+    if (!authenticatedUser || authenticatedUser.id !== userId) {
+      return res.status(403).json({ success: false, erro: "Acesso permitido somente ao próprio usuário" })
+    }
+
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: { name, email },
+      select: { id: true, name: true, email: true, campanhaId: true }
+    })
+    const token = jwt.sign({ email: user.email }, `${segredoJWT}`, { expiresIn: "100h" })
+    return res.status(200).json({ message: "Sucesso ao editar usuario", user, token })
+  } catch (err) {
+    console.log(err)
+    return res.status(400).json({ success: false, erro: "Erro ao editar usuario" })
+  }
+})
+
+Router.delete("/delete/user/:id", async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  try {
+    const user = await prisma.user.delete({
+      where: {
+        id: Number(id)
+      }
+    })
+    res.status(200).json({ message: "Sucesso ao deletar usuario", user: user })
+  } catch (err) {
+    console.log(err)
+    res.status(400).json({ sucess: false, error: err })
+  }
+})
+
+Router.post("/create/user", verificadorDeEmail, async (req: Request, res: Response) => {
+  const { nome, emailUser, password }: userRegister = req.body;
+  const secretPassword = await bcrypt.hash(password, 10)
+
+  const user = await prisma.user.create({
+    data: {
+      name: nome,
+      email: emailUser,
+      password: `${secretPassword}`
+    },
+    include: {
+      fichas: true
+    }
+  })
+
+  res.status(200).json({ message: "Sucesso", user: user })
+})
 
 Router.get("/find/allusers", async (req: Request, res: Response) => {
   try {
@@ -125,23 +203,64 @@ Router.get("/find/allusers", async (req: Request, res: Response) => {
 
 //loginUser
 
-Router.post("/login", async (req: Request, res: Response) => {
-  const { emailOrNickName } = req.body;
-  try {
-    const userLogin = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { email: emailOrNickName },
-          { name: emailOrNickName }
-        ]
-      }
-    })
-    console.log("usuario fez o login", userLogin);
-    if (!userLogin) return res.status(400).json({ ErrorMessage: `Erro ao fazer login, usuario ou email nao encontrado` });
-    return res.status(200).json({ message: "Sucesso, usuario fez login com sucesso", loginValid: true, emailOrNickName });
 
+Router.post("/login", async (req: Request, res: Response) => {
+  const { email, password } = req.body;
+  const token = jwt.sign({ email }, `${segredoJWT}`, { expiresIn: "100h" })
+  const passwordHashado = bcrypt.hash(password, 10)
+  try {
+    console.log(email, passwordHashado)
+
+    const userLogin = await prisma.user.findUnique({
+      where: { email }
+    })
+
+    if (!userLogin) return res.status(400).json({ ErrorMessage: `Erro ao fazer login, usuario ou email nao encontrado` });
+    const result = await bcrypt.compare(password, userLogin.password)
+    if (result) {
+      return res.status(200).json({ message: "Sucesso, usuario fez login com sucesso", loginValid: true, userLogin, token });
+    }
+
+    return res.status(400).json({ ErrorMessage: `Erro ao fazer login,senha ou email incorreta` });
   } catch (err) {
     res.status(400).json({ Error: err, ErrorMessage: `Erro ao fazer login` })
+  }
+})
+
+Router.post("/logged", VerifyLogin, async (req: Request, res: Response) => {
+  const email = typeof req.body.email === "string" ? req.body.email.trim() : ""
+  if (email !== res.locals.authEmail) {
+    return res.status(401).json({ success: false, erro: "Token de acesso expirado" })
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true }
+    })
+    if (!user) {
+      return res.status(401).json({ success: false, erro: "Usuário não encontrado" })
+    }
+    return res.status(200).json({ success: true })
+  } catch (err) {
+    console.log(err)
+    return res.status(400).json({ success: false, erro: "Erro ao validar sessão" })
+  }
+})
+
+Router.get("/find/ficha/CampanhaAtiva/:userId", async (req: Request, res: Response) => {
+  const { userId } = req.params;
+  try {
+    const campanhas = await prisma.ficha.findFirst({
+      where: { id: Number(userId) },
+      select: {
+        campanha: true
+      }
+    })
+    res.status(200).json({ Sucess: "Sucesso ao listar campanhas", campanhas })
+  } catch (err) {
+    console.log(err)
+    return res.status(400).json({ Err: err, ErroMessage: "Erro ao tentar achar ficha" })
   }
 })
 
