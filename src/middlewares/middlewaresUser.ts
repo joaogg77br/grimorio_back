@@ -1,29 +1,34 @@
-import { type Response, type Request, type NextFunction } from "express"
-import * as z from "zod"
-import { prisma } from "../app.js"
+import { type Response, type Request, type NextFunction } from "express";
+import * as z from "zod";
+import { prisma } from "../app.js";
+
 const userRegister = z.object({
   nome: z.string(),
-  email: z.email({ error: "Email incorreto" })
-})
+  email: z.email({ error: "Email incorreto" }),
+});
 
 type userRegister = z.infer<typeof userRegister>;
 
-async function verificadorDeEmail(req: Request, res: Response, next: NextFunction) {
+async function verificadorDeEmail(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   const { nome, emailUser } = req.body;
-  console.log(emailUser)
-  const user: userRegister = { email: emailUser, nome }
-  userRegister.parse({ nome, email: emailUser })
+  console.log(emailUser);
+  const user: userRegister = { email: emailUser, nome };
+  userRegister.parse({ nome, email: emailUser });
 
   const emailFinded = await prisma.user.findUnique({
     where: { email: emailUser },
-    select: { email: true }
-  })
+    select: { email: true },
+  });
 
-  console.log("email", emailFinded)
-  if (emailFinded) return res.status(400).json({ errorMessage: "Erro email ja encontrado" })
+  console.log("email", emailFinded);
+  if (emailFinded)
+    return res.status(400).json({ errorMessage: "Erro email ja encontrado" });
 
-  next()
+  next();
 }
 
-
-export { verificadorDeEmail } 
+export { verificadorDeEmail };
