@@ -5,7 +5,6 @@ const Router = express.Router();
 
 Router.get("/equipamento/modificacoes/:userId/:equipamentoId", async (req: Request, res: Response) => {
   try {
-    const equipamento = await 
 
   } catch (err) {
 
