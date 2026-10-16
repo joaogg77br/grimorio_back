@@ -97,8 +97,16 @@ model Arma {
   pericia       String
   equiped       Boolean @default(false)
 
-  ficha   Ficha @relation(fields: [fichaId], references: [id], onDelete: Cascade)
-  fichaId Int
+  modificacoes modificacao[]
+  ficha        Ficha         @relation(fields: [fichaId], references: [id], onDelete: Cascade)
+  fichaId      Int
+}
+
+model modificacao {
+  id        String @id @default(uuid())
+  descricao String
+  arma      Arma?  @relation(fields: [armaId], references: [id])
+  armaId    Int?
 }
 
 model Historico {

@@ -24,8 +24,9 @@ export default function VerifyLogin(
         .status(401)
         .json({ success: false, erro: "Token de acesso inválido" });
     }
+    res.locals.userId = decoded.id;
     res.locals.authEmail = decoded.email;
-    return next();
+    next();
   } catch {
     return res
       .status(401)
