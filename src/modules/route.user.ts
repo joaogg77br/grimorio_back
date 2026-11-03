@@ -1,13 +1,13 @@
 import express from "express"
-import { verificadorDeEmail } from "../middlewares/middlewaresUser.js";
+import { verificadorDeEmail } from "../middlewares/middlewaresUser.ts";
 import bcrypt from "bcrypt";
-import VerifyLogin from "../middlewares/verifyLogin.js";
+import VerifyLogin from "../middlewares/verifyLogin.ts";
 import jwt from "jsonwebtoken";
 const segredoJWT = process.env.JWT_SECRET;
-import verifyOrigem from "../middlewares/verifyOrigem.js";
+import verifyOrigem from "../middlewares/verifyOrigem.ts";
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const Router = express.Router();
-import { prisma } from "../app.js";
+import { prisma } from "../prisma.ts";
 import { type Request, type Response } from "express"
 
 type userRegister = {
@@ -27,9 +27,6 @@ Router.post(
         name: nome,
         email: emailUser,
         password: `${secretPassword}`,
-      },
-      include: {
-        fichas: true,
       },
     });
     res.status(200).json({ message: "Sucesso", user: user });
@@ -118,7 +115,7 @@ Router.get("/find/allusers", async (req: Request, res: Response) => {
   try {
     const allusers = await prisma.user.findMany({
       include: {
-        fichas: true,
+        fichaTormenta: true,
       },
     });
     res.status(200).json({ Sucesso: `sucesso`, usersFind: allusers });

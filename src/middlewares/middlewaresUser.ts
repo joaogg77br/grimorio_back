@@ -1,6 +1,6 @@
 import { type Response, type Request, type NextFunction } from "express";
 import * as z from "zod";
-import { prisma } from "../app.js";
+import { prisma } from "../prisma.ts";
 
 const userRegister = z.object({
   nome: z.string(),

@@ -1,110 +1,66 @@
-import express, { type Request, type Response } from "express";
-import { prisma } from "../app.js";
+import express from "express";
+import { z } from "zod";
+import { prisma } from "../prisma.ts";
+import { definedData, generalBody, getSystem, integer, positiveId, resourceHandler, text } from "./resource.helpers.ts";
 
 const Router = express.Router();
+const fields = z.object({ nome: text, descricao: z.string() });
+const tormenta = fields.extend({ classe: text, gastoPe: integer.nullable().optional(), fichaId: positiveId });
+const geral = fields.extend({ custo: integer.nullable().optional(), fichaGeralId: positiveId });
 
-// Habilidades
-Router.post("/habilidades/create/", async (req: Request, res: Response) => {
-  const { nome, descricao, classe, gastoPe, fichaId } = req.body;
-  try {
-    const habilidade = await prisma.habilidade.create({
-      data: {
-        nome,
-        classe,
-        descricao,
-        gastoPe,
-        fichaId,
-      },
-    });
-    res.status(200).json({
-      Sucess: "Sucesso, habilidade criada com sucesso",
-      data: habilidade,
-    });
-  } catch (err) {
-    console.log(err);
-    return res.status(400).json({
-      Error: err,
-      ErrorMessage: "Erro nao foi possivel criar habilidade",
-    });
+Router.post(["/habilidades/create", "/habilidades/create/:sistema"], resourceHandler(async (req, res) => {
+  let result;
+  switch (getSystem(req)) {
+    case "tormenta":
+      result = await prisma.habilidade.create({ data: definedData(tormenta.parse(req.body)) });
+      break;
+    case "geral":
+      result = await prisma.habilidadeFichaGeral.create({ data: definedData(geral.parse(generalBody(req.body))) });
+      break;
   }
-});
+  res.status(200).json({ Sucess: "Operação realizada com sucesso", data: result });
+}));
 
-Router.post("/habilidades/delete/:id", async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const habilidadeId = parseInt(`${id}`);
-
-  try {
-    const habilidade = await prisma.habilidade.delete({
-      where: {
-        id: habilidadeId,
-      },
-    });
-    res.status(200).json({
-      Sucess: "Sucesso, habilidade deletada com sucesso",
-      data: habilidade,
-    });
-  } catch (err) {
-    console.log(err);
-    return res.status(400).json({
-      Error: err,
-      ErrorMessage: "Erro nao foi possivel deletar habilidade",
-    });
+Router.put(["/habilidades/update/:id", "/habilidades/update/:id/:sistema"], resourceHandler(async (req, res) => {
+  const id = positiveId.parse(req.params.id);
+  let result;
+  switch (getSystem(req)) {
+    case "tormenta":
+      result = await prisma.habilidade.update({ where: { id }, data: definedData(tormenta.partial().parse(req.body)) });
+      break;
+    case "geral":
+      result = await prisma.habilidadeFichaGeral.update({ where: { id }, data: definedData(geral.partial().parse(generalBody(req.body))) });
+      break;
   }
-});
+  res.status(200).json({ Sucess: "Operação realizada com sucesso", data: result });
+}));
 
-Router.put("/habilidades/update/:id", async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const habilidadeId = parseInt(`${id}`);
-  const { nome, descricao, gastoPe, fichaId, classe } = req.body;
-  const data: {
-    nome?: string;
-    descricao?: string;
-    gastoPe?: number;
-    fichaId?: number;
-    classe?: string;
-  } = {};
-  if (nome !== undefined) data.nome = nome;
-  if (descricao !== undefined) data.descricao = descricao;
-  if (gastoPe !== undefined) data.gastoPe = gastoPe;
-  if (fichaId !== undefined) data.fichaId = Number(fichaId);
-  if (classe !== undefined) data.classe = classe;
-  try {
-    const habilidade = await prisma.habilidade.update({
-      where: { id: habilidadeId },
-      data,
-    });
-    res.status(200).json({
-      Sucess: "Sucesso, habilidade atualizada com sucesso",
-      data: habilidade,
-    });
-  } catch (err) {
-    console.log(err);
-    return res.status(400).json({
-      Error: err,
-      ErrorMessage: "Erro nao foi possivel atualizar habilidade",
-    });
+Router.get(["/habilidades/list/:fichaId", "/habilidades/list/:fichaId/:sistema"], resourceHandler(async (req, res) => {
+  const id = positiveId.parse(req.params.fichaId);
+  let result;
+  switch (getSystem(req)) {
+    case "tormenta":
+      result = await prisma.habilidade.findMany({ where: { fichaId: id } });
+      break;
+    case "geral":
+      result = await prisma.habilidadeFichaGeral.findMany({ where: { fichaGeralId: id } });
+      break;
   }
-});
+  res.status(200).json({ Sucesso: "Operação realizada com sucesso", habilidades: result });
+}));
 
-Router.get(
-  "/habilidades/list/:fichaId",
-  async (req: Request, res: Response) => {
-    const { fichaId } = req.params;
-    try {
-      const habilidades = await prisma.habilidade.findMany({
-        where: { fichaId: Number(fichaId) },
-      });
-      res.status(200).json({
-        Sucesso: "Sucesso habilidades listadas com sucesso",
-        habilidades,
-      });
-    } catch (err) {
-      console.log(err);
-      return res
-        .status(400)
-        .json({ Erro: err, ErroMessage: "Erro ao listar habilidades" });
-    }
-  },
-);
+Router.post(["/habilidades/delete/:id", "/habilidades/delete/:id/:sistema"], resourceHandler(async (req, res) => {
+  const id = positiveId.parse(req.params.id);
+  let result;
+  switch (getSystem(req)) {
+    case "tormenta":
+      result = await prisma.habilidade.delete({ where: { id } });
+      break;
+    case "geral":
+      result = await prisma.habilidadeFichaGeral.delete({ where: { id } });
+      break;
+  }
+  res.status(200).json({ Sucess: "Operação realizada com sucesso", data: result });
+}));
 
 export default Router;

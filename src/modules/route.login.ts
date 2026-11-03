@@ -1,8 +1,8 @@
 import express from "express"
-import VerifyLogin from "../middlewares/verifyLogin.js";
+import VerifyLogin from "../middlewares/verifyLogin.ts";
 const Router = express.Router();
 import { Request, Response, NextFunction } from "express"
-import { prisma } from "../app.js";
+import { prisma } from "../prisma.ts";
 const segredoJWT = process.env.JWT_SECRET;
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";

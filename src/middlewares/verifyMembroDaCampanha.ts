@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 const item = process.env.SECRET_JWT;
-import { prisma } from "../app.js";
+import { prisma } from "../prisma.ts";
 import { NextFunction, Request, Response } from "express";
 //ficha:1,campanha:1
 export default async function verifyMembroCampanha(

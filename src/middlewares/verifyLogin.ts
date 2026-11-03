@@ -1,3 +1,4 @@
+//@ts-ignore
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 const segredoJWT = process.env.JWT_SECRET;

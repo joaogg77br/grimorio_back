@@ -1,0 +1,88 @@
+model fichaGeral {
+  id             Int                    @id @default(autoincrement())
+  nomePersonagem String
+  nomeJogador    String
+  pericias       PericiasFichaGeral[]
+  habilidade     HabilidadeFichaGeral[]
+  defesa         DefesaFichaGeral[]
+  armas          ArmaFichaGeral[]
+  historico      HistoricoFichaGeral[]
+  jogador        User                   @relation(fields: [jogadorId], references: [id], onDelete: Cascade)
+  jogadorId      Int
+  campanhas      Campanha[]
+  accounts       Accountants[]
+  camposSimples  CamposSimples[]
+}
+
+model CamposSimples {
+  id           Int         @id @default(autoincrement())
+  nome         String
+  value        String
+  fichaGeral   fichaGeral? @relation(fields: [fichaGeralId], references: [id])
+  fichaGeralId Int?
+}
+
+model HistoricoFichaGeral {
+  id           Int         @id @default(autoincrement())
+  value        String
+  fichaGeral   fichaGeral? @relation(fields: [fichaGeralId], references: [id])
+  fichaGeralId Int?
+}
+
+model ArmaFichaGeral {
+  id            Int         @id @default(autoincrement())
+  nome          String // Corrigido de Int para String
+  preco         Int
+  dadoDeDano    String // Ex: "1d6", "2d8" costumam ser strings
+  alcance       String
+  peso          Float
+  tipoDano      String
+  tipoArma      String
+  critico       Int
+  multiplicador Int
+  atributo      String
+  descricao     String?
+  pericia       String
+  equiped       Boolean     @default(false)
+  fichaGeral    fichaGeral? @relation(fields: [fichaGeralId], references: [id])
+  fichaGeralId  Int?
+}
+
+model HabilidadeFichaGeral {
+  id           Int         @id @default(autoincrement())
+  nome         String
+  descricao    String
+  custo        Int?
+  fichaGeral   fichaGeral? @relation(fields: [fichaGeralId], references: [id])
+  fichaGeralId Int?
+}
+
+model DefesaFichaGeral {
+  id           Int         @id @default(autoincrement())
+  outros       Int         @default(0)
+  atributos    String      @default("Des")
+  fichaId      Int         @unique
+  fichaGeral   fichaGeral? @relation(fields: [fichaGeralId], references: [id])
+  fichaGeralId Int?
+}
+
+model PericiasFichaGeral {
+  id           Int         @id @default(autoincrement())
+  atributo     String
+  nome         String
+  treino       Int
+  outros       Int
+  fichaGeral   fichaGeral? @relation(fields: [fichaGeralId], references: [id])
+  fichaGeralId Int?
+}
+
+model Accountants {
+  id            Int         @id @default(autoincrement())
+  name          String
+  currentValue  Int         @default(0)
+  maximumValue  Int         @default(0)
+  color         String
+  accontantType String      @default("bar")
+  fichaGeral    fichaGeral? @relation(fields: [fichaGeralId], references: [id])
+  fichaGeralId  Int?
+}

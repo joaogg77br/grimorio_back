@@ -1,11 +1,10 @@
 import express, { type Request, type Response } from "express";
-import { prisma } from "../app.js";
+import { prisma } from "../prisma.ts";
 
 const Router = express.Router();
 
 // --- PROTEÇÕES ---
-Router.post(
-  ["/equipamentos/create/Protecao", "/equipamentos/create/Protecoes"],
+Router.post(["/equipamentos/create/Protecao", "/equipamentos/create/Protecoes"],
   async (req: Request, res: Response) => {
     try {
       const {

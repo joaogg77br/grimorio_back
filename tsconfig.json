@@ -30,6 +30,7 @@
     // "noFallthroughCasesInSwitch": true,
     // "noPropertyAccessFromIndexSignature": true,
     "allowSyntheticDefaultImports":true,
+    "allowImportingTsExtensions":true,
     "noEmit":true,
     // Recommended Options
     "rootDir":".",

@@ -10,7 +10,7 @@ CREATE TABLE "User" (
 );
 
 -- CreateTable
-CREATE TABLE "Ficha" (
+CREATE TABLE "FichaTormenta20" (
     "id" SERIAL NOT NULL,
     "nomeJogador" TEXT NOT NULL,
     "nomePersonagem" TEXT NOT NULL,
@@ -36,13 +36,13 @@ CREATE TABLE "Ficha" (
     "jogadorId" INTEGER NOT NULL,
     "campanhaId" INTEGER,
 
-    CONSTRAINT "Ficha_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "FichaTormenta20_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Defesa" (
     "id" SERIAL NOT NULL,
-    "outros" INTEGER NOT NULL,
+    "outros" INTEGER NOT NULL DEFAULT 0,
     "atributos" TEXT NOT NULL DEFAULT 'Des',
     "fichaId" INTEGER NOT NULL,
 
@@ -81,6 +81,15 @@ CREATE TABLE "Arma" (
     "fichaId" INTEGER NOT NULL,
 
     CONSTRAINT "Arma_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "modificacao" (
+    "id" TEXT NOT NULL,
+    "descricao" TEXT NOT NULL,
+    "armaId" INTEGER,
+
+    CONSTRAINT "modificacao_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -171,6 +180,17 @@ CREATE TABLE "Campanha" (
 );
 
 -- CreateTable
+CREATE TABLE "Atributo" (
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
+    "atributoValue" INTEGER NOT NULL DEFAULT 10,
+    "modificador" INTEGER NOT NULL DEFAULT 0,
+    "fichaId" INTEGER,
+
+    CONSTRAINT "Atributo_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "_CampanhaToUser" (
     "A" INTEGER NOT NULL,
     "B" INTEGER NOT NULL,
@@ -179,11 +199,11 @@ CREATE TABLE "_CampanhaToUser" (
 );
 
 -- CreateTable
-CREATE TABLE "_CampanhaToFicha" (
+CREATE TABLE "_CampanhaToFichaTormenta20" (
     "A" INTEGER NOT NULL,
     "B" INTEGER NOT NULL,
 
-    CONSTRAINT "_CampanhaToFicha_AB_pkey" PRIMARY KEY ("A","B")
+    CONSTRAINT "_CampanhaToFichaTormenta20_AB_pkey" PRIMARY KEY ("A","B")
 );
 
 -- CreateIndex
@@ -196,37 +216,40 @@ CREATE UNIQUE INDEX "Defesa_fichaId_key" ON "Defesa"("fichaId");
 CREATE INDEX "_CampanhaToUser_B_index" ON "_CampanhaToUser"("B");
 
 -- CreateIndex
-CREATE INDEX "_CampanhaToFicha_B_index" ON "_CampanhaToFicha"("B");
+CREATE INDEX "_CampanhaToFichaTormenta20_B_index" ON "_CampanhaToFichaTormenta20"("B");
 
 -- AddForeignKey
-ALTER TABLE "Ficha" ADD CONSTRAINT "Ficha_jogadorId_fkey" FOREIGN KEY ("jogadorId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "FichaTormenta20" ADD CONSTRAINT "FichaTormenta20_jogadorId_fkey" FOREIGN KEY ("jogadorId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Defesa" ADD CONSTRAINT "Defesa_fichaId_fkey" FOREIGN KEY ("fichaId") REFERENCES "Ficha"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Defesa" ADD CONSTRAINT "Defesa_fichaId_fkey" FOREIGN KEY ("fichaId") REFERENCES "FichaTormenta20"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Pericia" ADD CONSTRAINT "Pericia_fichaId_fkey" FOREIGN KEY ("fichaId") REFERENCES "Ficha"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Pericia" ADD CONSTRAINT "Pericia_fichaId_fkey" FOREIGN KEY ("fichaId") REFERENCES "FichaTormenta20"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Arma" ADD CONSTRAINT "Arma_fichaId_fkey" FOREIGN KEY ("fichaId") REFERENCES "Ficha"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Arma" ADD CONSTRAINT "Arma_fichaId_fkey" FOREIGN KEY ("fichaId") REFERENCES "FichaTormenta20"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Historico" ADD CONSTRAINT "Historico_fichaId_fkey" FOREIGN KEY ("fichaId") REFERENCES "Ficha"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "modificacao" ADD CONSTRAINT "modificacao_armaId_fkey" FOREIGN KEY ("armaId") REFERENCES "Arma"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Protecao" ADD CONSTRAINT "Protecao_fichaId_fkey" FOREIGN KEY ("fichaId") REFERENCES "Ficha"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Historico" ADD CONSTRAINT "Historico_fichaId_fkey" FOREIGN KEY ("fichaId") REFERENCES "FichaTormenta20"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Geral" ADD CONSTRAINT "Geral_fichaId_fkey" FOREIGN KEY ("fichaId") REFERENCES "Ficha"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Protecao" ADD CONSTRAINT "Protecao_fichaId_fkey" FOREIGN KEY ("fichaId") REFERENCES "FichaTormenta20"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Habilidade" ADD CONSTRAINT "Habilidade_fichaId_fkey" FOREIGN KEY ("fichaId") REFERENCES "Ficha"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Geral" ADD CONSTRAINT "Geral_fichaId_fkey" FOREIGN KEY ("fichaId") REFERENCES "FichaTormenta20"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Magia" ADD CONSTRAINT "Magia_fichaId_fkey" FOREIGN KEY ("fichaId") REFERENCES "Ficha"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Habilidade" ADD CONSTRAINT "Habilidade_fichaId_fkey" FOREIGN KEY ("fichaId") REFERENCES "FichaTormenta20"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Item" ADD CONSTRAINT "Item_fichaId_fkey" FOREIGN KEY ("fichaId") REFERENCES "Ficha"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Magia" ADD CONSTRAINT "Magia_fichaId_fkey" FOREIGN KEY ("fichaId") REFERENCES "FichaTormenta20"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Item" ADD CONSTRAINT "Item_fichaId_fkey" FOREIGN KEY ("fichaId") REFERENCES "FichaTormenta20"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "_CampanhaToUser" ADD CONSTRAINT "_CampanhaToUser_A_fkey" FOREIGN KEY ("A") REFERENCES "Campanha"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -235,7 +258,7 @@ ALTER TABLE "_CampanhaToUser" ADD CONSTRAINT "_CampanhaToUser_A_fkey" FOREIGN KE
 ALTER TABLE "_CampanhaToUser" ADD CONSTRAINT "_CampanhaToUser_B_fkey" FOREIGN KEY ("B") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "_CampanhaToFicha" ADD CONSTRAINT "_CampanhaToFicha_A_fkey" FOREIGN KEY ("A") REFERENCES "Campanha"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "_CampanhaToFichaTormenta20" ADD CONSTRAINT "_CampanhaToFichaTormenta20_A_fkey" FOREIGN KEY ("A") REFERENCES "Campanha"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "_CampanhaToFicha" ADD CONSTRAINT "_CampanhaToFicha_B_fkey" FOREIGN KEY ("B") REFERENCES "Ficha"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "_CampanhaToFichaTormenta20" ADD CONSTRAINT "_CampanhaToFichaTormenta20_B_fkey" FOREIGN KEY ("B") REFERENCES "FichaTormenta20"("id") ON DELETE CASCADE ON UPDATE CASCADE;

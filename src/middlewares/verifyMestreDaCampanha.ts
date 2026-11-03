@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 const chaveSecretaJwt = process.env.JWT_SECRET;
 import jwt from "jsonwebtoken";
-import { prisma } from "../app.js";
+import { prisma } from "../prisma.ts";
 
 function getToken(req: Request) {
   const authorization = req.headers.authorization;

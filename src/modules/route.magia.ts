@@ -1,5 +1,5 @@
 import express, { type Request, type Response } from "express";
-import { prisma } from "../app.js";
+import { prisma } from "../prisma.ts";
 
 const Router = express.Router();
 type Magias = {
@@ -68,8 +68,7 @@ Router.put(
           fichaId: Number(fichaId),
         },
         data,
-      });
-      res.status(200).json({ Sucesso: "Sucesso", magias });
+      }); res.status(200).json({ Sucesso: "Sucesso", magias });
     } catch (err) {
       console.log(err);
       return res.status(400).json({

@@ -1,6 +1,8 @@
+//@ts-ignore
 import express, { type Request, type Response } from "express";
-import { prisma } from "../app.js";
-import { MinHeroStatus } from "../middlewares/MinimoPersonagem.js";
+import sistemaRpg from "./sistemas.json" with { type: "json" }
+import { prisma } from "../prisma.ts";
+import { MinHeroStatus } from "../middlewares/MinimoPersonagem.ts";
 
 const Router = express.Router();
 type Pericias = {
@@ -12,80 +14,37 @@ type Pericias = {
   fichaId: number;
 };
 
-type PersonagemCreateData = {
-  nomePersonagem: string;
-  nomeJogador: string;
-  raca: string;
-  divindade: string;
-  origem: string;
-  classe: string;
-  nivel: number;
-  defesa: {
-    outros: number;
-    atributos: string;
-  };
-  for_: number;
-  con: number;
-  des: number;
-  int_: number;
-  sab: number;
-  car: number;
-  pvMax: number;
-  pvCurrent: number;
-  pmMax: number;
-  pmCurrent: number;
-  deslocamento: number;
-  tibao: any;
-  jogadorId: number;
-  descricao?: string;
-  pericias: Pericias[];
-  tamanho: string;
-};
-
-type PersonagemUpdateData = {
-  nomePersonagem?: string;
-  nomeJogador?: string;
-  raca?: string;
-  divindade?: string;
-  origem?: string;
-  classe?: string;
-  nivel?: number;
-  defesa?: {
-    upsert: {
-      create: { atributos: string; outros: number };
-      update: { atributos: string; outros: number };
-    };
-  };
-  for?: number;
-  con?: number;
-  des?: number;
-  int?: number;
-  sab?: number;
-  car?: number;
-  pvMax?: number;
-  pvCurrent?: number;
-  pmMax?: number;
-  pmCurrent?: number;
-  deslocamento?: number;
-  tibao?: any;
-  descricao?: string;
-  tamanho?: string;
-};
-
 Router.get(
-  "/find/ficha/CampanhaAtiva/:userId",
+  "/find/ficha/CampanhaAtiva/:userId/:sistema",
   async (req: Request, res: Response) => {
-    const { userId } = req.params;
+    const { userId, sistema } = req.params;
     try {
-      const campanhas = await prisma.ficha.findFirst({
-        where: { id: Number(userId) },
-        select: {
-          campanha: true,
-        },
-      });
-      res
-        .status(200)
-        .json({ Sucess: "Sucesso ao listar campanhas", campanhas });
+      switch (sistema) {
+        case "tormenta":
+          const campanhaTormenta20 = await prisma.fichaTormenta20.findFirst({
+            where: { id: Number(userId) },
+            select: {
+              campanha: true,
+            },
+          });
+          res
+            .status(200)
+            .json({ Sucess: "Sucesso ao listar campanhas", campanhaTormenta20 });
+
+          break;
+        case "geral":
+          const campanhaGeral = await prisma.fichaGeral.findFirst({
+            where: { id: Number(userId) },
+            select: {
+              campanhas: true
+            },
+          });
+          res
+            .status(200)
+            .json({ Sucess: "Sucesso ao listar campanhas", campanhaGeral });
+          break;
+        default: res.status(400).json({ Error: "Sistema nao encontrado" });
+      }
     } catch (err) {
       console.log(err);
       return res
@@ -97,90 +56,99 @@ Router.get(
 
 // Personagens
 Router.post(
-  "/create/personagem",
-  MinHeroStatus,
+  "/create/personagem/:sistema",
   async (req: Request, res: Response) => {
-    const {
-      nomePersonagem,
-      nomeJogador,
-      raca,
-      divindade,
-      origem,
-      classe,
-      nivel,
-      defesa,
-      for_,
-      con,
-      des,
-      int_,
-      sab,
-      car,
-      pvMax,
-      pvCurrent,
-      pmMax,
-      pmCurrent,
-      deslocamento,
-      tibao,
-      jogadorId,
-      descricao,
-      pericias,
-      tamanho,
-    }: PersonagemCreateData = req.body;
-
+    const { sistema } = req.params
+    const { jogadorId, fichaFields, pericias } = req.body;
+    console.log(jogadorId)
     try {
-      const ficha = await prisma.ficha.create({
-        data: {
-          nomeJogador,
-          nomePersonagem,
-          divindade,
-          raca,
-          origem,
-          classe,
-          nivel: Number(nivel),
-          for: for_,
-          con: Number(con),
-          des: Number(des),
-          int: Number(int_),
-          sab: Number(sab),
-          car: Number(car),
-          pvMax: Number(pvMax),
-          pmMax: Number(pmMax),
-          pvCurrent: Number(pvCurrent),
-          pmCurrent: Number(pmCurrent),
-          tibao,
-          tamanho,
-          deslocamento: Number(deslocamento),
-          descricao: descricao ?? null,
-          jogadorId: Number(jogadorId),
-          defesa: {
-            create: {
-              atributos: defesa.atributos,
-              outros: defesa.outros,
+      switch (sistema) {
+        case "tormenta":
+          const tormentaFicha = await prisma.fichaTormenta20.create({
+            data: {
+              ...fichaFields,
+              jogadorId: Number(jogadorId),
+              pericias: {
+                createMany: {
+                  data: pericias.map((item: any) => ({
+                    atributo: item.atributo,
+                    nome: item.nome,
+                    metadeDoNivel: item.metadeDoNivel,
+                    treino: item.treino,
+                    outros: item.outros,
+                  }))
+                }
+              }
             },
-          },
-          pericias: {
-            createMany: {
-              data: pericias.map((item) => ({
-                atributo: item.atributo,
-                nome: item.nome,
-                metadeDoNivel: item.metadeDoNivel,
-                treino: item.treino,
-                outros: item.outros,
-              })),
-            },
-          },
-        },
-        select: {
-          armas: true,
-          protecoes: true,
-          id: true,
-          gerais: true,
-          pericias: true,
-        },
-      });
-      res.status(201).json({ message: "Ficha criada com sucesso", ficha });
+            select: {
+              armas: true,
+              protecoes: true,
+              id: true,
+              gerais: true,
+              pericias: true
+            }
+          })
+          res.status(201).json({ message: "Ficha criada com sucesso", tormentaFicha });
+          break;
+        case "geral":
+          console.log(pericias)
+          if (pericias) {
+            const fichaGeral = await prisma.fichaGeral.create({
+              data: {
+                ...fichaFields,
+                jogadorId: Number(jogadorId),
+                pericias: {
+                  createMany: {
+                    data: pericias.map((item: any) => ({
+                      atributo: item.atributo,
+                      nome: item.nome,
+                      metadeDoNivel: item.metadeDoNivel,
+                      treino: item.treino,
+                      outros: item.outros,
+                    }))
+                  }
+                }
+              },
+              select: {
+                nomeJogador: true,
+                nomePersonagem: true,
+                defesa: true,
+                pericias: true,
+                armas: true,
+                habilidade: true,
+        accounts: true,
+        camposSimples: true,
+                campanhas: true,
+                id: true,
+              }
+            })
+            res.status(201).json({ message: "Ficha criada com sucesso", fichaGeral });
+          } else {
+            const fichaGeral = await prisma.fichaGeral.create({
+              data: {
+                ...fichaFields,
+                jogadorId: Number(jogadorId),
+              },
+              select: {
+                nomeJogador: true,
+                nomePersonagem: true,
+        defesa: true,
+                pericias: true,
+                armas: true,
+                habilidade: true,
+        accounts: true,
+        camposSimples: true,
+                campanhas: true,
+                id: true,
+              }
+            })
+            res.status(201).json({ message: "Ficha criada com sucesso", fichaGeral });
+          }
+          break;
+        default: res.status(400).json({ Error: "Sistema nao encontrado" })
+      }
     } catch (err) {
-      console.log(err);
+      console.log({ Erro: err, fichaFields, err });
       res.status(400).json({
         Error: err,
         ErrorMessage: `Erro ao tentar criar ficha tente novamente mais tarde`,
@@ -190,56 +158,30 @@ Router.post(
 );
 
 // Personagens
-Router.put(
-  "/atualize/ficha/personagem/:fichaId",
+Router.put("/atualize/ficha/personagem/:fichaId/:sistema", MinHeroStatus,
   async (req: Request, res: Response) => {
-    const { fichaId } = req.params;
-    const data: PersonagemUpdateData = {};
-    if (req.body.nomePersonagem !== undefined)
-      data.nomePersonagem = req.body.nomePersonagem;
-    if (req.body.nomeJogador !== undefined)
-      data.nomeJogador = req.body.nomeJogador;
-    if (req.body.raca !== undefined) data.raca = req.body.raca;
-    if (req.body.divindade !== undefined) data.divindade = req.body.divindade;
-    if (req.body.origem !== undefined) data.origem = req.body.origem;
-    if (req.body.classe !== undefined) data.classe = req.body.classe;
-    if (req.body.nivel !== undefined) data.nivel = req.body.nivel;
-    if (req.body.for_ !== undefined) data.for = req.body.for_;
-    if (req.body.con !== undefined) data.con = req.body.con;
-    if (req.body.des !== undefined) data.des = req.body.des;
-    if (req.body.int_ !== undefined) data.int = req.body.int_;
-    if (req.body.sab !== undefined) data.sab = req.body.sab;
-    if (req.body.car !== undefined) data.car = req.body.car;
-    if (req.body.pvMax !== undefined) data.pvMax = req.body.pvMax;
-    if (req.body.pvCurrent !== undefined) data.pvCurrent = req.body.pvCurrent;
-    if (req.body.pmMax !== undefined) data.pmMax = req.body.pmMax;
-    if (req.body.pmCurrent !== undefined) data.pmCurrent = req.body.pmCurrent;
-    if (req.body.deslocamento !== undefined)
-      data.deslocamento = req.body.deslocamento;
-    if (req.body.tibao !== undefined) data.tibao = req.body.tibao;
-    if (req.body.nomePersonagem !== undefined)
-      data.nomePersonagem = req.body.nomePersonagem;
-    if (req.body.descricao !== undefined) data.descricao = req.body.descricao;
-    if (req.body.tamanho !== undefined) data.tamanho = req.body.tamanho;
-    // ... demais campos escalares iguais ...
-
-    if (req.body.defesa !== undefined) {
-      const outros = Number(req.body.defesa.outros ?? 0);
-      const atributos =
-        req.body.defesa.atributos ?? req.body.defesa.atributo ?? "Des";
-      data.defesa = {
-        upsert: {
-          create: { outros, atributos },
-          update: { outros, atributos },
-        },
-      };
-    }
+    const { fichaId, sistema } = req.params;
+    const { content } = req.body;
     try {
-      const ficha = await prisma.ficha.update({
-        where: { id: Number(fichaId) },
-        data,
-      });
-      res.status(201).json({ message: "Ficha editada com sucesso", ficha });
+      switch (sistema) {
+        case "tormenta":
+          const ficha = await prisma.fichaTormenta20.update({
+            where: { id: Number(fichaId) },
+            data: content,
+          });
+          res.status(201).json({ message: "Ficha editada com sucesso", ficha });
+          break;
+        case "geral": {
+          const fichaGeral = await prisma.fichaGeral.update({
+            where: { id: Number(fichaId) },
+            data: content,
+          });
+          res.status(200).json({ message: "Ficha geral editada com sucesso", fichaGeral });
+          break;
+        }
+        default:
+          res.status(400).json({ message: "Erro ao achar sistema, tente novamente mais tarde." });
+      }
     } catch (err) {
       console.log(err);
       res.status(400).json({
@@ -250,20 +192,40 @@ Router.put(
   },
 );
 
-Router.delete("/deleteFicha/:fichaId", async (req: Request, res: Response) => {
-  let { fichaId } = req.params;
+Router.delete("/deleteFicha/:fichaId/:sistema", async (req: Request, res: Response) => {
+  let { fichaId, sistema } = req.params;
   const fichaIDNumber: number = parseInt(`${fichaId}`);
   try {
-    const fichaDeletada = await prisma.ficha.delete({
-      where: {
-        id: fichaIDNumber,
-      },
-    });
-    console.log(fichaDeletada);
-    res.status(200).json({
-      Sucesso: "Ficha deletada com sucesso",
-      SucessoMessage: fichaDeletada,
-    });
+    switch (sistema) {
+      case "tormenta":
+        const fichaDeletada = await prisma.fichaTormenta20.delete({
+          where: {
+            id: fichaIDNumber,
+          },
+        });
+        console.log(fichaDeletada);
+        res.status(200).json({
+          Sucesso: "Ficha deletada com sucesso",
+          SucessoMessage: fichaDeletada,
+
+        })
+        break;
+      case "geral":
+        const fichaGeralDeletada = await prisma.fichaGeral.delete({
+          where: {
+            id: fichaIDNumber,
+          },
+        });
+        console.log(fichaGeralDeletada);
+        res.status(200).json({
+          Sucesso: "Ficha deletada com sucesso",
+          SucessoMessage: fichaGeralDeletada,
+
+        })
+        break;
+      default:
+        res.status(400).json({ message: "Erro ao achar sistema, tente novamente mais tarde" })
+    }
   } catch (err) {
     res
       .status(400)
@@ -271,27 +233,27 @@ Router.delete("/deleteFicha/:fichaId", async (req: Request, res: Response) => {
   }
 });
 
+//na verdade todas as fichas, precisam listar de user incluindo todas as fichas do User
 Router.get("/todasAsFichas/:userId", async (req: Request, res: Response) => {
   let { userId } = req.params;
-  const userIdNumber = parseInt(`${userId}`);
   try {
     console.log(userId);
-    const fichas: Array<any> = await prisma.ficha.findMany({
+    const item = await prisma.user.findUnique({
       where: {
-        jogadorId: userIdNumber,
+        id: Number(userId),
       },
       include: {
-        defesa: true,
+        fichaTormenta: true,
+        fichaGeral: true
       },
     });
 
-    console.log("fichas", fichas);
-    if (fichas.length <= 0)
-      res.status(400).json({
+    if (!item)
+      return res.status(404).json({
         Error: "Usuario nao encontrado",
         ErrorMessage: `Erro ao tentar buscar todasAsFichas`,
       });
-    res.status(201).json({ message: "Fichas trazidas sucesso", data: fichas });
+    res.status(201).json({ message: "Fichas trazidas sucesso", data: item });
   } catch (err) {
     res.status(400).json({
       Error: err,

@@ -1,10 +1,10 @@
 import express, { type Request, type Response } from "express";
-import { prisma } from "../app.js";
+import { prisma } from "../prisma.ts";
 import crypto from "crypto";
-import VerifyLogin from "../middlewares/verifyLogin.js";
-import verifyOrigem from "../middlewares/verifyOrigem.js";
-import verifyMestreDaCampanha from "../middlewares/verifyMestreDaCampanha.js";
-import verifyMembroCampanha from "../middlewares/verifyMembroDaCampanha.js";
+import VerifyLogin from "../middlewares/verifyLogin.ts";
+import verifyOrigem from "../middlewares/verifyOrigem.ts";
+import verifyMestreDaCampanha from "../middlewares/verifyMestreDaCampanha.ts";
+import verifyMembroCampanha from "../middlewares/verifyMembroDaCampanha.ts";
 
 const Router = express.Router();
 
@@ -207,7 +207,7 @@ Router.get(
     try {
       const fichas = await prisma.campanha.findFirst({
         where: { id: Number(campanhaId) },
-        select: { fichas: true },
+        select: { fichasTormenta: true },
       });
 
       return res.status(200).json({ Sucess: "Listadas com sucesso", fichas });
@@ -224,7 +224,7 @@ Router.post(
     try {
       const campanhaFicha = await prisma.campanha.update({
         where: { id: Number(campanhaId) },
-        data: { fichas: { connect: { id: Number(fichaId) } } },
+        data: { fichasTormenta: { connect: { id: Number(fichaId) } } },
       });
       console.log(campanhaFicha);
       res
@@ -246,7 +246,7 @@ Router.delete(
     try {
       const campanhaFicha = await prisma.campanha.update({
         where: { id: Number(campanhaId) },
-        data: { fichas: { disconnect: { id: Number(fichaId) } } },
+        data: { fichasTormenta: { disconnect: { id: Number(fichaId) } } },
       });
       console.log(campanhaFicha);
       res
